@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "bn.h"
 
 // Cложение двух вводимых чисел.
@@ -79,6 +81,72 @@ int fibonacci_test()
 		bn_delete(BN2);
 		bn_delete(TEMP);
 	}
+
+	return(0);
+}
+
+// Нахождение N-ого элемента модифицированной последовательности Фибоначчи.
+int custom_fibonacci_test()
+{
+	printf("Custom fibonacci test.\n\n");
+
+	char *String1 = calloc(2048, sizeof(char));
+	char *String2 = calloc(2048, sizeof(char));
+
+	bn *BN1 = bn_new();
+	printf("The first element: ");
+	scanf("%s", String1);
+
+	printf("\n");
+
+	bn *BN2 = bn_new();
+	printf("The second element: ");
+	scanf("%s", String2);
+
+	printf("\n");
+
+	size_t Str1Len = strlen(String1);
+	size_t Str2Len = strlen(String2);
+
+	printf("Max number of elements: ");
+	long long unsigned int MaxN = 0;
+	scanf("%llu", &MaxN);
+
+	bn *TEMP = bn_new();
+
+	for (size_t j = 0; (j < Str1Len) && (j < Str2Len); j++)
+	{
+		String1[Str1Len - j] = '\0';
+		String2[Str2Len - j] = '\0';
+
+		bn_init_string_radix_pow2(BN1, String1, 16);
+		bn_init_string_radix_pow2(BN2, String2, 16);
+
+		bn_init_int(TEMP, 0);
+
+		unsigned int i = 0;
+
+		for (i = 0; i < MaxN; ++i)
+		{
+			if (bn_sign(BN1)*bn_sign(BN2) >= 0)
+			{
+				break;
+			}
+
+			bn_copy(TEMP, BN2);
+			bn_add_to(BN2, BN1);
+			bn_copy(BN1, TEMP);
+		}
+
+		printf("\n%zu : %u", Str1Len - j, i);
+	}
+
+	bn_delete(BN1);
+	bn_delete(BN2);
+	bn_delete(TEMP);
+
+	free(String1);
+	free(String2);
 
 	return(0);
 }
@@ -208,7 +276,8 @@ int main()
 	//fibonacci_test();
 
 	//multiplication_test();
-	factorial_test();
+	//factorial_test();
+	custom_fibonacci_test();
 
 	return(0);
 }
