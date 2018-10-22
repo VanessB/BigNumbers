@@ -3,6 +3,34 @@
 #include <string.h>
 #include "bn.h"
 
+// Ввод числа в системе счисления radix.
+int radix_test()
+{
+	while (1)
+	{
+		printf("Radix test.\n\n");
+		char String[1024];
+
+		unsigned int Radix = 2;
+		printf("Radix: ");
+		scanf("%u", &Radix);
+
+		bn *BN = bn_new();
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix(BN, String, Radix);
+		
+		printf("\n");
+		bn_print_hex(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
 // Cложение двух вводимых чисел.
 int addition_test()
 {
@@ -85,8 +113,10 @@ int fibonacci_test()
 	return(0);
 }
 
-// Нахождение N-ого элемента модифицированной последовательности Фибоначчи.
-int custom_fibonacci_test()
+// Нахождение номера последней пары соседних элементов модифицированной последовательности Фибоначчи, имеющих разный знак.
+// Гипотеза: для двух стартовых элементов, отношение которых близко к золотому сечению, искомый номер растёт линейно с ростом
+// длины (логарифма в случае целого) числа.
+int custom_fibonacci_sign_test()
 {
 	printf("Custom fibonacci test.\n\n");
 
@@ -277,7 +307,9 @@ int main()
 
 	//multiplication_test();
 	//factorial_test();
-	custom_fibonacci_test();
+	//custom_fibonacci_sign_test();
+
+	radix_test();
 
 	return(0);
 }

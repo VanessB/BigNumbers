@@ -160,12 +160,83 @@ bn *bn_init(bn const *orig)
 }
 
 // Инициализировать значение BN представлением строки
+// в системе счисления radix
+int bn_init_string_radix(bn *t, const char *init_string, int radix)
+{
+	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
+
+	memset(t->Body, 0, t->BodySize);
+	t->Sign = 0;
+
+	size_t StringLength = 0;
+	signed char Sign = 1; // Храним тут знак до того, как убедимся, что строка не нулевая.
+	if (init_string[0] == '-')
+	{
+		++init_string; //Сдвигаем указатель с минуса на первую цифру числа.
+		Sign = -1;
+	}
+
+	char FilledWithNulls = 1;
+	while (init_string[StringLength] != '\0')
+	{
+		if (FilledWithNulls && (init_string[StringLength] != '0')) { FilledWithNulls = 0; } // Проверка на зополненность одними нулями.
+		++StringLength; // Ищем длину строки.
+	}
+
+	if (!StringLength || FilledWithNulls) { return(BN_OK); } // С пустой строкой нечего делать.
+	t->Sign = Sign; // Для непустой строки ставим знак.
+
+	int Error = BN_OK;
+
+	Error = bn_shrink(t);
+	if (Error) { return(Error); }
+
+	bn *Power = bn_new();
+	if (Power == NULL) { return(BN_NO_MEMORY); }
+
+	bn *PoweredDigit = bn_new();
+	if (PoweredDigit == NULL) { return(BN_NO_MEMORY); }
+
+	Error = bn_init_int(Power, 1);
+	if (Error) { return(Error); }
+
+	unsigned char Digit = 0; // Знак разряда.
+	for (long long int i = StringLength; --i >= 0;)
+	{
+		Digit = init_string[i];
+
+		// Преводим из символа в число:
+		if (Digit >= 'a') { Digit += 10 - 'a'; }
+		else if (Digit >= 'A') { Digit += 10 - 'A'; }
+		else { Digit -= '0'; }
+
+		int Error = bn_init_int(PoweredDigit, Digit);
+		if (Error) { return(Error); }
+
+		Error = bn_mul_to(PoweredDigit, Power);
+		if (Error) { return(Error); }
+
+		Error = bn_add_to(t, PoweredDigit);
+		if (Error) { return(Error); }
+
+		Error = bn_mul_to_uint(Power, radix);
+		if (Error) { return(Error); }
+	}
+
+	Error = bn_delete(Power);
+	if (Error) { return(Error); }
+
+	Error = bn_delete(PoweredDigit);
+	return(Error);
+}
+
+// Инициализировать значение BN представлением строки
 // в системе счисления radix = 2^k.
 int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
 {
 	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
 
-	t->Body[0] = 0;
+	memset(t->Body, 0, t->BodySize);
 	t->Sign = 0;
 
 	size_t StringLength = 0;
@@ -192,7 +263,7 @@ int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
 	// Теперь RadixPower = log_2(radix)
 
 	size_t NewSize = (StringLength * RadixPower) / (UINT_BITS) + ((StringLength * RadixPower) % (UINT_BITS) != 0);
-	//       ceil( (~log(N)) * log_2(radix) / BitsInBlock ) - Верхняя оценка количества требуемых блококв.
+	//            ceil( (~log(N)) * log_2(radix) / BitsInBlock ) - Верхняя оценка количества требуемых блококв.
 
 	// Изменяем размер.
 	int Error = bn_resize(t, NewSize);
@@ -202,7 +273,7 @@ int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
 	long long unsigned int Block = 0;
 
 	unsigned char Power = 0; // Степень двойки при знаке.
-	unsigned char Digit = 0; // Знак.
+	unsigned char Digit = 0; // Знак разряда.
 	for (long long int i = StringLength; --i >= 0;)
 	{		
 		Digit = init_string[i];
@@ -574,7 +645,41 @@ int bn_mul_to_int(bn *t, int multipler)
 	return(bn_mul_to_uint(t, (unsigned int)multipler));
 }
 
+// Возвести число в степень degree
+int bn_pow_to(bn *t, int degree)
+{
+	if ((t == NULL) || (t->Body == NULL)) { return(BN_NULL_OBJECT); }
+	if (degree == 1)
+	{
+		return(BN_OK);
+	}
+	else if (degree == 0)
+	{
+		return(bn_init_int(t, 1));
+	}
 
+	bn *orig = bn_init(t);
+	if (orig == NULL) { return(BN_NO_MEMORY); }
+
+	int Error = BN_OK;
+	if (degree > 1)
+	{
+		int Error = BN_OK;
+		for (int i = 0; i < degree; ++i)
+		{
+			bn_mul_to(t, orig);
+			Error = bn_mul_to(t, orig);
+			if (Error) { return(Error); }
+		}
+	}
+	else
+	{
+		// TODO: реализовать после реализации деления.
+	}
+
+	Error = bn_delete(orig);
+	return(Error);
+}
 
 
 // Если левое меньше, вернуть <0; если равны, вернуть 0; иначе >0
