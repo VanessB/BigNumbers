@@ -297,6 +297,58 @@ int factorial_test()
 	return(BN_OK);
 }
 
+// Проверка функции сдвига числа.
+int shift_test()
+{
+	while (1)
+	{
+		printf("Shift test.\n\n");
+		char String[1024];
+
+		unsigned int Radix = 2;
+		printf("Radix: ");
+		scanf("%u", &Radix);
+
+		bn *BN = bn_new();
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix(BN, String, Radix);
+
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_shift(BN, 1);
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_shift(BN, 2);
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_shift(BN, -1);
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_shift(BN, -3);
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
 
 
 
@@ -309,7 +361,9 @@ int main()
 	//factorial_test();
 	//custom_fibonacci_sign_test();
 
-	radix_test();
+	//radix_test();
+
+	shift_test();
 
 	return(0);
 }

@@ -112,14 +112,71 @@ int bn_copy_shift(bn *dest, bn const *orig, long long int shift)
 	dest->Sign = orig->Sign;
 
 	unsigned int *DestPtr = dest->Body;
+	unsigned int *OrigPtr = orig->Body;
 	if (shift > 0) { DestPtr += shift; } // DestPtr = max(dest->Body, dest->Body + shift).
-	else { OrigSize += (size_t)shift; } // OrigSize = min(orig->BodySize, orig->BodySize + shift).
+	else
+	{
+		OrigSize += shift; // OrigSize = min(orig->BodySize, orig->BodySize + shift).
+		OrigPtr -= shift; // OrigPtr = max(orig->Body, orig->Body - shift).
+	}
 
-	memcpy(DestPtr, orig->Body, OrigSize * sizeof(unsigned int));
+	memcpy(DestPtr, OrigPtr, OrigSize * sizeof(unsigned int));
 
 	return(BN_OK);
 }
 
+// Сдвиг на shift блоков в сторону старших разрядов.
+int bn_shift(bn *t, long long int shift)
+{
+	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
+
+	if (!shift)
+	{
+		return(BN_OK);
+	}
+
+	size_t OrigSize = t->BodySize;
+	if (-shift >= (long long int)OrigSize)
+	{
+		// Нечего делать с таким большим по модулю отрицательным сдвигом.
+
+		bn_resize(t, 1);
+		t->Body[0] = 0;
+		t->Sign = 0;
+
+		return(BN_OK);
+	}
+
+	// С этого момента t->BodySize + shift >= 1. Иначе уже произошёл выход из функции.
+
+	// Изменяем размер t. Знак можно не обнулять, он позже скопируется.
+	{
+		size_t NewSize = (size_t)((long long int)t->BodySize + shift);
+		unsigned int *NewPointer = realloc(t->Body, sizeof(unsigned int) * NewSize);
+		if (NewPointer == NULL) { return(BN_NO_MEMORY); }
+		t->Body = NewPointer;
+		t->BodySize = NewSize;
+	}
+
+	unsigned int *DestPtr = t->Body;
+	unsigned int *OrigPtr = t->Body;
+	if (shift > 0) { DestPtr += shift; } // DestPtr = max(t->Body, t->Body + shift).
+	else
+	{
+		OrigSize += shift; // OrigSize = min(t->BodySize, t->BodySize + shift).
+		OrigPtr -= shift; // OrigPtr = max(t->Body, t->Body - shift).
+	}
+
+	memmove(DestPtr, OrigPtr, OrigSize * sizeof(unsigned int));
+
+	// Заполняем нулями пустые блоки.
+	if (shift > 0)
+	{
+		memset(t->Body, 0, shift * sizeof(unsigned int));
+	}
+
+	return(BN_OK);
+}
 
 
 // Создать новое BN

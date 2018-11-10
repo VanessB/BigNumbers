@@ -14,6 +14,7 @@ enum bn_codes
 
 // Копирование
 int bn_copy(bn *dest, bn const *orig);
+int bn_shift(bn *t, long long int shift);
 
 bn *bn_new(); // Создать новое BN
 bn *bn_init(bn const *orig); // Создать копию существующего BN
