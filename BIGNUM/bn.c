@@ -1,4 +1,9 @@
+//#define CONTEST
+
+#ifndef CONTEST
 #include "bn.h"
+#endif
+
 #include <stddef.h>
 #include <string.h> // Для memcpy.
 #include <stdlib.h> // Для abs().
@@ -6,8 +11,20 @@
 
 #include <math.h> // Для log().
 
+#ifdef CONTEST
+enum bn_codes
+{
+	BN_OK, BN_NULL_OBJECT, BN_NO_MEMORY, BN_DIVIDE_BY_ZERO
+};
+#endif
+
+const int UINT_MAXV = 0xffffffff;
 const int UINT_BITS = sizeof(unsigned int) * 8;
 const double POW2_32 = 4294967296.0; // 2^32
+
+int bn_add_to_int(bn *t, int additor);
+int bn_mul_to_uint(bn *t, unsigned int multipler);
+int bn_abs_cmp(bn const *left, bn const *right);
 
 struct bn_s
 {
@@ -24,7 +41,6 @@ int bn_resize(bn *OperatedBN, const size_t NewBodySize)
 	if ((OperatedBN == NULL) || ((OperatedBN->Body == NULL))) { return(BN_NULL_OBJECT); }
 	if (NewBodySize != OperatedBN->BodySize)
 	{
-		size_t Size = sizeof(unsigned int) * NewBodySize;
 		unsigned int *NewPointer = realloc(OperatedBN->Body, sizeof(unsigned int) * NewBodySize);
 		if (NewPointer == NULL) { return(BN_NO_MEMORY); }
 		OperatedBN->Body = NewPointer;
@@ -231,12 +247,6 @@ bn *bn_init(bn const *orig)
 	return(NewBN);
 }
 
-// Инициализировать значение BN десятичным представлением строки
-int bn_init_string(bn *t, const char *init_string)
-{
-	return(bn_init_string_radix(t, init_string, 10));
-}
-
 // Инициализировать значение BN представлением строки
 // в системе счисления radix
 int bn_init_string_radix(bn *t, const char *init_string, int radix)
@@ -311,6 +321,12 @@ int bn_init_string_radix(bn *t, const char *init_string, int radix)
 	return(Error);
 }
 
+// Инициализировать значение BN десятичным представлением строки
+int bn_init_string(bn *t, const char *init_string)
+{
+	return(bn_init_string_radix(t, init_string, 10));
+}
+
 // Инициализировать значение BN представлением строки
 // в системе счисления radix = 2^k.
 int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
@@ -369,7 +385,7 @@ int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
 
 		if (Power >= UINT_BITS) // Теперь новый прочитаный знак не может повлиять на текущий блок Body.
 		{
-			t->Body[BlockPos] = (Block & UINT_MAX); //Первые 32 бита блока записываем в текущий блок Body.
+			t->Body[BlockPos] = (Block & UINT_MAXV); //Первые 32 бита блока записываем в текущий блок Body.
 			Block >>= UINT_BITS - 1; //Остальные биты сдвигаем на 32 позиции, так как готовимся писать в следующий блок.
 			Block >>= 1; //Там была какая-то дичь со сдвигом на 32 бита за раз. Надо проверить.
 			++BlockPos; //Переходим к следующему блоку в Body.
@@ -377,7 +393,7 @@ int bn_init_string_radix_pow2(bn *t, const char *init_string, int radix)
 		}
 	}
 
-	if (Block) { t->Body[BlockPos] = (Block & UINT_MAX); } //Записываем недописанный блок.
+	if (Block) { t->Body[BlockPos] = (Block & UINT_MAXV); } //Записываем недописанный блок.
 
 	return(BN_OK);
 }
@@ -426,7 +442,7 @@ int bn_unsigned_add_to(bn *left, bn const *right, char mode)
 	for (i = 0; i < right->BodySize; ++i) // Поблочно суммируем с переносами излишков.
 	{
 		Block += (long long unsigned int)left->Body[i] + (long long unsigned int)right->Body[i];
-		left->Body[i] = (Block & UINT_MAX);
+		left->Body[i] = (Block & UINT_MAXV);
 
 		Block >>= 31; // INTEL!!!  D:<
 		Block >>= 1;
@@ -437,7 +453,7 @@ int bn_unsigned_add_to(bn *left, bn const *right, char mode)
 		if (!Block) { break; } // Нечего переносить в следующий разряд...
 
 		Block += (long long unsigned int)left->Body[i];
-		left->Body[i] = (Block & UINT_MAX);
+		left->Body[i] = (Block & UINT_MAXV);
 
 		Block >>= 31; // INTEL!!!  D:<
 		Block >>= 1;
@@ -456,7 +472,7 @@ int bn_unsigned_add_to(bn *left, bn const *right, char mode)
 			case 1:
 			{
 				if (left->BodySize == right->BodySize) { bn_resize(left, left->BodySize + 1); } // Добавляем еще один разряд.
-				left->Body[left->BodySize - 1] = (Block & UINT_MAX); // И прибавляем к нему, что осталось.
+				left->Body[left->BodySize - 1] = (Block & UINT_MAXV); // И прибавляем к нему, что осталось.
 				break;
 			}
 		}
@@ -534,7 +550,7 @@ int bn_add_to(bn *t, bn const *right)
 			for (i = 0; i < right->BodySize; ++i) // Поблочно суммируем с переносами излишков.
 			{
 				Block += (long long unsigned int)t->Body[i] + (long long unsigned int)right->Body[i];
-				t->Body[i] = (Block & UINT_MAX);
+				t->Body[i] = (Block & UINT_MAXV);
 
 				Block >>= 31; // INTEL!!!  D:<
 				Block >>= 1;
@@ -545,7 +561,7 @@ int bn_add_to(bn *t, bn const *right)
 				if (!Block) { break; } // Нечего переносить в следующий разряд...
 
 				Block += (long long unsigned int)t->Body[i];
-				t->Body[i] = (Block & UINT_MAX);
+				t->Body[i] = (Block & UINT_MAXV);
 
 				Block >>= 31; // INTEL!!!  D:<
 				Block >>= 1;
@@ -562,7 +578,7 @@ int bn_add_to(bn *t, bn const *right)
 						// Не хватило, так как дошли до последнего (i == t->BodySize).
 						bn_resize(t, t->BodySize + 1);
 					} 
-					t->Body[t->BodySize - 1] = (Block & UINT_MAX); // Прибавляем к последнему блоку, что осталось.
+					t->Body[t->BodySize - 1] = (Block & UINT_MAXV); // Прибавляем к последнему блоку, что осталось.
 				}
 				else
 				{
@@ -660,6 +676,8 @@ int bn_mul_to(bn *t, bn const *right)
 		bn_add_to(Result, Temp);
 	}
 
+	Result->Sign = t->Sign * right->Sign; // Знак.
+
 	bn_copy(t, Result);
 	bn_delete(Temp);
 	bn_delete(Result);
@@ -671,6 +689,8 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 {
 	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
 	if ((right == NULL) || ((right->Body == NULL))) { return(BN_NULL_OBJECT); }
+
+	int Error = BN_OK;
 
 	// Квадратичный алгоритм?
 
@@ -685,9 +705,22 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 
 	if (bn_abs_cmp(right, t) > 0)
 	{
-		bn_resize(t, 1);
-		t->Body[0] = 0;
-		t->Sign = 0;
+		switch (mode)
+		{
+			case 0:
+			{
+				Error = bn_resize(t, 1);
+				if (Error) { return(Error); }
+				t->Body[0] = 0;
+				t->Sign = 0;
+				break;
+			}
+			case 1:
+			{
+				// Остаток - все число.
+				break;
+			}
+		}
 
 		return(BN_OK);
 	}
@@ -695,22 +728,55 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 	long long unsigned int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
 
 	bn *ShiftedRight = bn_new(); // Делитель (right) с учетом текущего разряда в алгоритме со столбиком.
-	bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
+	if (ShiftedRight == NULL) { return(BN_NO_MEMORY); }
+
+	Error = bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
+	if (Error)
+	{
+		bn_delete(ShiftedRight);
+		return(Error);
+	}
 	ShiftedRight->Sign = 1; // Но модуль.
 
 	bn *MuledShiftedRight = bn_new(); // ShiftedRight умножить на оценку Digit.
+	if (MuledShiftedRight == NULL)
+	{
+		bn_delete(ShiftedRight);
+		return(BN_NO_MEMORY);
+	}
 
 	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
+	if (Num == NULL)
+	{
+		bn_delete(ShiftedRight);
+		bn_delete(MuledShiftedRight);
+		return(BN_NO_MEMORY);
+	}
 	Num->Sign = 1; // Но модуль.
 
 	bn *Result = bn_new(); // Результат.
-	bn_init_int(Result, t->Sign * right->Sign); // Инициализируем знаком.
+	if (Result == NULL)
+	{
+		bn_delete(ShiftedRight);
+		bn_delete(MuledShiftedRight);
+		bn_delete(Num);
+		return(BN_NO_MEMORY);
+	}
+	Error = bn_init_int(Result, t->Sign * right->Sign); // Инициализируем знаком.
+	if (Error)
+	{
+		bn_delete(ShiftedRight);
+		bn_delete(MuledShiftedRight);
+		bn_delete(Num);
+		bn_delete(Result);
+		return(Error);
+	}
 
 	for (size_t i = 0; i <= t->BodySize - right->BodySize; ++i)
 	{
 		Digit = 0;
 
-		if (bn_cmp(Num, ShiftedRight) > 0) // Избегаем ситуации, когда Num меньше Temp.
+		if (bn_cmp(Num, ShiftedRight) >= 0) // Избегаем ситуации, когда Num меньше Temp.
 		{
 			// Два (один, если размер равен одному) старших блока Num).
 			double DNUM = 0.0;
@@ -751,37 +817,69 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 			Digit = (long long unsigned int)(DNUM / DSHIFTEDRIGHT);
 
 			//printf("Digit: %llu \n", Digit);
-			if (Digit > UINT_MAX)
+			if (Digit > UINT_MAXV)
 			{
-				Digit = UINT_MAX; // Просто неточность оценки.
+				Digit = UINT_MAXV; // Просто неточность оценки.
 				printf("ALERT!!!\n");
 			}
 
-			bn_copy(MuledShiftedRight, ShiftedRight);
-			bn_mul_to_uint(MuledShiftedRight, (unsigned int)Digit);
+			Error = bn_copy(MuledShiftedRight, ShiftedRight);
+			if (Error)
+			{
+				bn_delete(ShiftedRight);
+				bn_delete(MuledShiftedRight);
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
 
-			//printf("\n MSR: \n");
-			//bn_print_formula(MuledShiftedRight);
-			bn_sub_to(Num, MuledShiftedRight);
-			//printf("New Num: \n");
-			//bn_print_formula(Num);
-			//printf("SR: \n");
-			//bn_print_formula(ShiftedRight);
+			Error = bn_mul_to_uint(MuledShiftedRight, (unsigned int)Digit);
+			if (Error)
+			{
+				bn_delete(ShiftedRight);
+				bn_delete(MuledShiftedRight);
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
+
+			Error = bn_sub_to(Num, MuledShiftedRight);
+			if (Error)
+			{
+				bn_delete(ShiftedRight);
+				bn_delete(MuledShiftedRight);
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
 
 			while (Num->Sign < 0)
 			{
-				bn_add_to(Num, ShiftedRight);
+				Error = bn_add_to(Num, ShiftedRight);
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
 				--Digit;
 			}
 
 			while (bn_cmp(Num, ShiftedRight) > 0)
 			{
-				bn_sub_to(Num, ShiftedRight);
+				Error = bn_sub_to(Num, ShiftedRight);
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
 				++Digit;
 			}
-
-			//printf("Corrected Num: \n");
-			//bn_print_formula(Num);
 		}
 
 		Result->Body[0] = (unsigned int)Digit;
@@ -789,17 +887,80 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 		bn_shift(ShiftedRight, -1);
 	}
 
-	bn_shrink(Result);
-	// Деление.
-	if (mode == 0)
+	Error = bn_shrink(Result);
+	if (Error)
 	{
-		bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
+		bn_delete(ShiftedRight);
+		bn_delete(MuledShiftedRight);
+		bn_delete(Num);
+		bn_delete(Result);
+		return(Error);
 	}
-	// Остаток
-	else if (mode == 1)
+
+	switch (mode)
 	{
-		bn_copy(t, Num);
-		// Надо еще подумать, как в этом случае лучше избежать подсчета Result...
+		case 0: // Деление.
+		{
+			if (Result->Sign < 0)
+			{
+				Error = bn_add_to_int(Result, -1); // Округление числа вниз, а не его модуля.
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
+			}
+			Error = bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
+			if (Error)
+			{
+				bn_delete(ShiftedRight);
+				bn_delete(MuledShiftedRight);
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
+			break;
+		}
+		case 1: // Остаток
+		{
+			if ((Result->Sign < 0) && Num->Sign)
+			{
+				// Остаток не от деления модуля, а от деления числа.
+				Error = bn_sub_to(Num, right);
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
+
+				Error = bn_abs(Num);
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
+			}
+			Error = bn_copy(t, Num);
+			if (Error)
+			{
+				bn_delete(ShiftedRight);
+				bn_delete(MuledShiftedRight);
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
+			// Надо еще подумать, как в этом случае лучше избежать подсчета Result...
+			break;
+		}
 	}
 
 	bn_delete(ShiftedRight);
@@ -812,138 +973,79 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 int bn_div_to(bn *t, bn const *right)
 {
 	return(bn_div_mod_to(t, right, 0));
-	/*
-	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
-	if ((right == NULL) || ((right->Body == NULL))) { return(BN_NULL_OBJECT); }
-
-	// Квадратичный алгоритм?
-
-	if (!right->Sign)
-	{
-		return(BN_DIVIDE_BY_ZERO); // Деление на ноль.
-	}
-	if (!t->Sign)
-	{
-		return(BN_OK); // Деление нуля.
-	}
-
-	if (bn_abs_cmp(right, t) > 0)
-	{
-		bn_resize(t, 1);
-		t->Body[0] = 0;
-		t->Sign = 0;
-
-		return(BN_OK);
-	}
-
-	unsigned long long int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
-
-	bn *ShiftedRight = bn_new(); // Делитель (right) с учетом текущего разряда в алгоритме со столбиком.
-	bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
-	ShiftedRight->Sign = 1; // Но модуль.
-
-	bn *MuledShiftedRight = bn_new(); // ShiftedRight умножить на оценку Digit.
-
-	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
-	Num->Sign = 1; // Но модуль.
-
-	bn *Result = bn_new(); // Результат.
-	bn_init_int(Result, t->Sign * right->Sign); // Инициализируем знаком.
-
-	for (size_t i = 0; i <= t->BodySize - right->BodySize; ++i)
-	{
-		Digit = 0;
-
-		if (bn_cmp(Num, ShiftedRight) > 0) // Избегаем ситуации, когда Num меньше Temp.
-		{
-			// Два (один, если размер равен одному) старших блока Num).
-			double DNUM = 0.0;
-
-			// Умноженный на 2^32 старший блок Num.
-			long long unsigned int ShiftedNumB1 = (long long unsigned int)(Num->Body[Num->BodySize - 1]);
-			ShiftedNumB1 <<= 31;
-			ShiftedNumB1 <<= 1;
-
-			DNUM = (double)ShiftedNumB1;
-
-			if (Num->BodySize > 1)
-			{
-				DNUM += (double)(Num->Body[Num->BodySize - 2]); // Еще один блок Num.
-			}
-
-			// Аналогично для ShiftedRight.
-			double DSHIFTEDRIGHT = 0.0;
-
-			// Умноженный на 2^32 старший блок ShiftedRight.
-			long long unsigned int ShiftedRightB1 = (long long unsigned int)(ShiftedRight->Body[ShiftedRight->BodySize - 1]);
-			ShiftedRightB1 <<= 31;
-			ShiftedRightB1 <<= 1;
-
-			DSHIFTEDRIGHT = (double)ShiftedRightB1;
-
-			if (Num->BodySize > 1)
-			{
-				DSHIFTEDRIGHT += (double)(ShiftedRight->Body[ShiftedRight->BodySize - 2]); // Еще один блок ShiftedRight.
-			}
-
-			if (Num->BodySize > ShiftedRight->BodySize)
-			{
-				// На самом деле, возможен только вариант с разницой размеров в единицу.
-				DSHIFTEDRIGHT /= POW2_32;
-			}
-
-			Digit = (unsigned int)(DNUM / DSHIFTEDRIGHT);
-
-			printf("Digit: %u \n", Digit);
-			if (Digit > UINT_MAX)
-			{
-				printf("ALERT!!!\n");
-			}
-
-			bn_copy(MuledShiftedRight, ShiftedRight);
-			bn_mul_to_uint(MuledShiftedRight, (unsigned int)Digit);
-
-			//printf("MSR: \n");
-			//bn_print_formula(MuledShiftedRight);
-			bn_sub_to(Num, MuledShiftedRight);
-			//printf("New Num: \n");
-			//bn_print_formula(Num);
-
-			while (Num->Sign < 0)
-			{
-				bn_add_to(Num, ShiftedRight);
-				--Digit;
-			}
-
-			while (bn_cmp(Num, ShiftedRight) > 0)
-			{
-				bn_sub_to(Num, ShiftedRight);
-				++Digit;
-			}
-
-			//printf("Corrected Num: \n");
-			//bn_print_formula(Num);
-		}
-
-		Result->Body[0] = (unsigned int)Digit;
-		bn_shift(Result, 1);
-		bn_shift(ShiftedRight, -1);
-	}
-	
-	bn_shrink(Result);
-	bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
-
-	bn_delete(ShiftedRight);
-	bn_delete(MuledShiftedRight);
-	bn_delete(Num);
-	bn_delete(Result);
-
-	return(BN_OK);
-	*/
 }
 int bn_mod_to(bn *t, bn const *right)
 {
 	return(bn_div_mod_to(t, right, 1));
+}
+
+// Сложение с маленьким числом.
+int bn_add_to_int(bn *t, int additor)
+{
+	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
+	int Error = BN_OK;
+
+	if (t->Sign * additor > 0)
+	{
+		additor = abs(additor);
+		if (t->Body[0] <= UINT_MAXV - (unsigned int)additor)
+		{
+			t->Body[0] += additor;
+		}
+		else
+		{
+			t->Body[0] += additor;
+
+			size_t i = 1;
+			for (; i < t->BodySize; ++i)
+			{
+				if (t->Body[i] == UINT_MAXV) { t->Body[i] = 0; }
+				else { t->Body[i] += 1; break; }
+			}
+
+			if (i == t->BodySize)
+			{
+				Error = bn_resize(t, t->BodySize + 1);
+				if (Error) { return(Error); }
+				t->Body[t->BodySize - 1] = 1;
+			}
+		}
+	}
+	else
+	{
+		additor = abs(additor);
+		if (t->Body[0] >= (unsigned int)additor)
+		{
+			t->Body[0] -= additor;
+		}
+		else
+		{
+			if (t->BodySize > 1)
+			{
+				t->Body[0] -= additor;
+
+				size_t i = 1;
+				for (; i < t->BodySize; ++i)
+				{
+					if (t->Body[i] == 0) { t->Body[i] = UINT_MAXV; }
+					else { t->Body[i] -= 1; break; }
+				}
+
+				if (i == t->BodySize)
+				{
+					Error = bn_shrink(t);
+					if (Error) { return(Error); }
+				}
+			}
+			else
+			{
+				t->Sign *= -1;
+				t->Body[0] = additor - t->Body[0];
+			}
+		}
+	}
+
+	return(Error);
 }
 
 // Умножение на маленькое число.
@@ -971,7 +1073,7 @@ int bn_mul_to_uint(bn *t, unsigned int multipler)
 	for (i = 0; i < t->BodySize; ++i) // Поблочно умножаем с переносами излишков.
 	{
 		Block += (long long unsigned int)t->Body[i] * multipler;
-		t->Body[i] = (Block & UINT_MAX);
+		t->Body[i] = (Block & UINT_MAXV);
 
 		Block >>= 31; // INTEL!!!  D:<
 		Block >>= 1;
@@ -983,7 +1085,7 @@ int bn_mul_to_uint(bn *t, unsigned int multipler)
 		// Проверяем, хватит ли текущего количества блоков.
 		// Не хватило, так как дошли до последнего (i == t->BodySize).
 		bn_resize(t, t->BodySize + 1);
-		t->Body[t->BodySize - 1] = (Block & UINT_MAX); // Прибавляем к последнему блоку, что осталось.
+		t->Body[t->BodySize - 1] = (Block & UINT_MAXV); // Прибавляем к последнему блоку, что осталось.
 	}
 
 	return(BN_OK);
@@ -1024,9 +1126,21 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 
 	if ((t->BodySize == 1) && (t->Body[0] < divider))
 	{
-		bn_resize(t, 1);
-		t->Body[0] = 0;
-		t->Sign = 0;
+		switch (mode)
+		{
+			case 0:
+			{
+				bn_resize(t, 1);
+				t->Body[0] = 0;
+				t->Sign = 0;
+				break;
+			}
+			case 1:
+			{
+				// Остаток - все число.
+				break;
+			}
+		}
 
 		return(BN_OK);
 	}
@@ -1044,7 +1158,7 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 		Digit = 0;
 
 		// Избегаем ситуации, когда Num меньше divider * 2^(32*i).
-		if ((Num->Body[Num->BodySize - 1] > divider) || (Num->BodySize > t->BodySize - i))
+		if ((Num->Body[Num->BodySize - 1] > divider) || (Num->BodySize >= t->BodySize - i))
 		{
 			if (Num->BodySize == t->BodySize - i)
 			{
@@ -1061,7 +1175,7 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 				(long long unsigned int)divider;
 
 				Num->Body[Num->BodySize - 1] = 0;
-				Num->Body[Num->BodySize - 2] -= (unsigned int)(Digit*((long long unsigned int)divider) & UINT_MAX);
+				Num->Body[Num->BodySize - 2] -= (unsigned int)(Digit*((long long unsigned int)divider) & UINT_MAXV);
 			}
 
 			bn_shrink(Num);
@@ -1072,16 +1186,20 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 	}
 
 	bn_shrink(Result);
-	// Деление.
-	if (mode == 0)
+
+	switch (mode)
 	{
-		bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
-	}
-	// Остаток
-	else if (mode == 1)
-	{
-		bn_copy(t, Num);
-		// Надо еще подумать, как в этом случае лучше избежать подсчета Result...
+		case 0: // Деление.
+		{
+			bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
+			break;
+		}
+		case 1: // Остаток
+		{
+			bn_copy(t, Num);
+			// Надо еще подумать, как в этом случае лучше избежать подсчета Result...
+			break;
+		}
 	}
 
 	bn_delete(Num);
@@ -1159,6 +1277,11 @@ int bn_pow_to(bn *t, int degree)
 
 	return(Error);
 }
+// Извлечь корень степени reciprocal из BN (бонусная функция)
+int bn_root_to(bn *t, int reciprocal)
+{
+	return(BN_OK); // Заглушка.
+}
 
 
 // Аналоги операций x = l+r (l-r, l*r, l/r, l%r)
@@ -1230,10 +1353,81 @@ const char *bn_to_string(bn const *t, int radix)
 	}
 
 	char *str = NULL;
+	if (!(t->Sign))
+	{
+		str = calloc(2, sizeof(char));
+		if (str == NULL) { return(NULL); }
+
+		str[0] = '0';
+		str[1] = 0;
+		return(str);
+	}
+
 	char *tempstr = NULL;
 
 	size_t Size = (size_t)((double)(t->BodySize)*(log(POW2_32) / log(radix))) + 1; // Верхняя оценка длины строки.
 	tempstr = calloc(Size, sizeof(char));
+
+	bn *MOD = bn_new();
+	if (MOD == NULL) { return(NULL); }
+
+	bn *COPY = bn_init(t);
+	if (COPY == NULL) { return(NULL); }
+
+	char Digit = 0;
+
+	int Error = BN_OK;
+
+	size_t i = 0;
+	while (COPY->Sign)
+	{
+		Error = bn_copy(MOD, COPY);
+		if (Error) { return(NULL); }
+
+		Error = bn_div_mod_to_uint(MOD, radix, 1);
+		if (Error) { return(NULL); }
+
+		// TODO: очевидно, что остаток от деления на малое число помещается в малое число. Незачем для него делать bn.
+		Digit = MOD->Body[0];
+
+		if (Digit >= 10)
+		{
+			Digit += 'A' - 10;
+		}
+		else
+		{
+			Digit += '0';
+		}
+
+		tempstr[i] = Digit;
+		++i;
+
+		bn_div_mod_to_uint(COPY, radix, 0);
+	}
+
+	// Теперь переворачиваем строку.
+
+	// Резервируем место под знак, если надо.
+	size_t j = 0;
+	if (t->Sign == -1)
+	{
+		++i;
+		++j;
+		str = calloc(i + 1, sizeof(char));
+		str[0] = '-';
+	}
+	else
+	{
+		str = calloc(i + 1, sizeof(char));
+	}
+
+	// Переворачиваем.
+	for (; j < i; ++j)
+	{
+		str[j] = tempstr[i - 1 - j];
+	}
+	str[i] = 0;
+	free(tempstr);
 
 	return(str);
 }
@@ -1307,7 +1501,7 @@ int bn_neg(bn *t)
 int bn_abs(bn *t)
 {
 	if (t == NULL) { return(BN_NULL_OBJECT); }
-	t->Sign = ~(t->Sign); // Переворачиваем биты.
+	t->Sign = -(t->Sign);
 	return(BN_OK);
 }
 //-1 если t<0; 0 если t = 0, 1 если t>0

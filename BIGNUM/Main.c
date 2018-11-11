@@ -31,6 +31,75 @@ int radix_test()
 	return(0);
 }
 
+// Вывод числа в системе счисления radix.
+int radix_out_test()
+{
+	while (1)
+	{
+		printf("Radix test.\n\n");
+		char String[1024];
+
+		unsigned int Radix = 2;
+		printf("Radix: ");
+		scanf("%u", &Radix);
+
+		bn *BN = bn_new();
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN, String);
+
+		const char *str = bn_to_string(BN, Radix);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
+// Сложение большого числа и int.
+int add_to_int_test()
+{
+	while (1)
+	{
+		printf("Addition to int test.\n\n");
+		char String[1024];
+
+		bn *BN = bn_new();
+		int Integer = 0;
+
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix(BN, String, 10);
+
+		printf("\n");
+
+		printf("Integer: ");
+		scanf("%d", &Integer);
+
+		// СЛОЖЕНИЕ.
+		bn_add_to_int(BN, Integer);
+
+		const char *str = bn_to_string(BN, 10);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
+
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
 // Cложение двух вводимых чисел.
 int addition_test()
 {
@@ -510,7 +579,11 @@ int main()
 
 	//mod_test();
 
-	div_mod_to_uint_test();
+	//div_mod_to_uint_test();
+
+	//radix_out_test();
+
+	add_to_int_test();
 
 	return(0);
 }

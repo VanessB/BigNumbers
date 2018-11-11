@@ -8,8 +8,6 @@ enum bn_codes
 };
 
 
-
-
 //ВСПОМОГАТЕЛЬНОЕ.
 
 // Копирование
@@ -37,6 +35,9 @@ int bn_sub_to(bn *t, bn const *right);
 int bn_mul_to(bn *t, bn const *right);
 int bn_div_to(bn *t, bn const *right);
 int bn_mod_to(bn *t, bn const *right);
+
+// Сложение с маленьким числом.
+int bn_add_to_int(bn *t, int additor);
 
 // Умножение на маленькое число.
 int bn_mul_to_uint(bn *t, unsigned int multipler);
