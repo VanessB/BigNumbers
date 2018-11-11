@@ -1067,11 +1067,69 @@ int bn_pow_to(bn *t, int degree)
 		// Бессмысленно.
 		Error = bn_init_int(t, 0);
 		if (Error) { return(Error); }
+
 	}
 
 	return(Error);
 }
 
+
+// Аналоги операций x = l+r (l-r, l*r, l/r, l%r)
+bn* bn_add(bn const *left, bn const *right)
+{
+	if (left == NULL) { return(NULL); }
+	bn *t = bn_init(left);
+	if (t == NULL) { return(NULL); }
+
+	int Error = bn_add_to(t, right);
+	if (Error) { return(NULL); }
+	
+	return(t);
+}
+bn* bn_sub(bn const *left, bn const *right)
+{
+	if (left == NULL) { return(NULL); }
+	bn *t = bn_init(left);
+	if (t == NULL) { return(NULL); }
+
+	int Error = bn_sub_to(t, right);
+	if (Error) { return(NULL); }
+
+	return(t);
+}
+bn* bn_mul(bn const *left, bn const *right)
+{
+	if (left == NULL) { return(NULL); }
+	bn *t = bn_init(left);
+	if (t == NULL) { return(NULL); }
+
+	int Error = bn_mul_to(t, right);
+	if (Error) { return(NULL); }
+
+	return(t);
+}
+bn* bn_div(bn const *left, bn const *right)
+{
+	if (left == NULL) { return(NULL); }
+	bn *t = bn_init(left);
+	if (t == NULL) { return(NULL); }
+
+	int Error = bn_div_to(t, right);
+	if (Error) { return(NULL); }
+
+	return(t);
+}
+bn* bn_mod(bn const *left, bn const *right)
+{
+	if (left == NULL) { return(NULL); }
+	bn *t = bn_init(left);
+	if (t == NULL) { return(NULL); }
+
+	int Error = bn_mod_to(t, right);
+	if (Error) { return(NULL); }
+
+	return(t);
+}
 
 // Если левое меньше, вернуть <0; если равны, вернуть 0; иначе >0
 // TODO: нехорошая вещь может случиться при сравнении чисел с зарезервированной пустой памятью (размер Body не соответствует числу).

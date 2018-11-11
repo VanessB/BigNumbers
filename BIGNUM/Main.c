@@ -58,7 +58,7 @@ int addition_test()
 		scanf("%s", String);
 		bn_init_string_radix_pow2(BN2, String, 16);
 
-		printf("BN1: \n");
+		printf("BN2: \n");
 		bn_print_hex(BN2);
 
 		// СЛОЖЕНИЕ.
@@ -247,7 +247,7 @@ int multiplication_test()
 		scanf("%s", String);
 		bn_init_string_radix_pow2(BN2, String, 16);
 
-		printf("BN1: \n");
+		printf("BN2: \n");
 		bn_print_hex(BN2);
 
 		// Умножение.
@@ -296,7 +296,7 @@ int division_test()
 		scanf("%s", String);
 		bn_init_string_radix(BN2, String, Radix);
 
-		printf("BN1: \n");
+		printf("BN2: \n");
 		bn_print_formula(BN2);
 
 		// Деление.
@@ -345,7 +345,7 @@ int mod_test()
 		scanf("%s", String);
 		bn_init_string_radix(BN2, String, Radix);
 
-		printf("BN1: \n");
+		printf("BN2: \n");
 		bn_print_formula(BN2);
 
 		// Деление с остатком.
