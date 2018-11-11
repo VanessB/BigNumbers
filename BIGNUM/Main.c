@@ -265,7 +265,7 @@ int multiplication_test()
 	return(0);
 }
 
-// Умножение больших чисел.
+// Деление больших чисел.
 int division_test()
 {
 	while (1)
@@ -301,6 +301,55 @@ int division_test()
 
 		// Деление.
 		bn_div_to(BN1, BN2);
+
+		printf("\n");
+		bn_print_hex(BN1);
+		printf("\n");
+		printf("\n");
+
+		bn_delete(BN1);
+		bn_delete(BN2);
+	}
+
+	return(0);
+}
+
+// Деление с остатком больших чисел.
+int mod_test()
+{
+	while (1)
+	{
+		printf("Mod test.\n\n");
+		char String[1024];
+
+		unsigned int Radix = 2;
+		printf("Radix: ");
+		scanf("%u", &Radix);
+
+		bn *BN1 = bn_new();
+
+		printf("First big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix(BN1, String, Radix);
+
+		printf("BN1: \n");
+		bn_print_formula(BN1);
+
+
+		printf("\n");
+
+
+		bn *BN2 = bn_new();
+
+		printf("Second big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix(BN2, String, Radix);
+
+		printf("BN1: \n");
+		bn_print_formula(BN2);
+
+		// Деление с остатком.
+		bn_mod_to(BN1, BN2);
 
 		printf("\n");
 		bn_print_hex(BN1);
@@ -412,7 +461,7 @@ int main()
 
 	//radix_test();
 
-	division_test();
+	mod_test();
 
 	return(0);
 }
