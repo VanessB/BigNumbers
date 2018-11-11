@@ -684,10 +684,11 @@ int bn_div_to(bn *t, bn const *right)
 		return(BN_OK);
 	}
 
-	unsigned long long int Digit = 0; // Текущий знак, который мы собираемся записать в соотвествующий разряд частного.
+	unsigned long long int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
 
 	bn *ShiftedRight = bn_new(); // Делитель (right) с учетом текущего разряда в алгоритме со столбиком.
 	bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
+	ShiftedRight->Sign = 1; // Но модуль.
 
 	bn *MuledShiftedRight = bn_new(); // ShiftedRight умножить на оценку Digit.
 
