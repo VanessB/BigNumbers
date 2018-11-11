@@ -229,6 +229,12 @@ bn *bn_init(bn const *orig)
 	return(NewBN);
 }
 
+// Инициализировать значение BN десятичным представлением строки
+int bn_init_string(bn *t, const char *init_string)
+{
+	bn_init_string_radix(t, init_string, 10);
+}
+
 // Инициализировать значение BN представлением строки
 // в системе счисления radix
 int bn_init_string_radix(bn *t, const char *init_string, int radix)
@@ -1001,6 +1007,21 @@ int bn_mul_to_int(bn *t, int multipler)
 int bn_pow_to(bn *t, int degree)
 {
 	if ((t == NULL) || (t->Body == NULL)) { return(BN_NULL_OBJECT); }
+
+	// Отсеиваем случаи с 1 и -1.
+	if ((t->BodySize == 1) && (t->Body[0] == 1))
+	{
+		if (t->Sign == 1)
+		{
+			return(BN_OK);
+		}
+		else if (t->Sign == -1)
+		{
+			// Знак меняется при нечетной степени.
+			t->Sign = 1 - 2 * (abs(degree) % 2);
+		}
+	}
+
 	if (degree == 1)
 	{
 		return(BN_OK);
@@ -1010,26 +1031,44 @@ int bn_pow_to(bn *t, int degree)
 		return(bn_init_int(t, 1));
 	}
 
-	bn *orig = bn_init(t);
-	if (orig == NULL) { return(BN_NO_MEMORY); }
-
 	int Error = BN_OK;
 	if (degree > 1)
 	{
-		int Error = BN_OK;
-		for (int i = 0; i < degree; ++i)
+		if (degree % 2)
 		{
-			bn_mul_to(t, orig);
+			bn *orig = bn_init(t);
+			if (orig == NULL) { return(BN_NO_MEMORY); }
+
+			for (int i = 0; i < degree / 2; ++i)
+			{
+				// Быстрее умножать "пирамидкой".
+				Error = bn_mul_to(t, t);
+				if (Error) { return(Error); }
+			}
+			
 			Error = bn_mul_to(t, orig);
 			if (Error) { return(Error); }
+
+			Error = bn_delete(orig);
+			if (Error) { return(Error); }
+		}
+		else
+		{
+			for (int i = 0; i < degree / 2; ++i)
+			{
+				// Быстрее умножать "пирамидкой".
+				Error = bn_mul_to(t, t);
+				if (Error) { return(Error); }
+			}
 		}
 	}
 	else
 	{
-		// TODO: реализовать после реализации деления.
+		// Бессмысленно.
+		Error = bn_init_int(t, 0);
+		if (Error) { return(Error); }
 	}
 
-	Error = bn_delete(orig);
 	return(Error);
 }
 
