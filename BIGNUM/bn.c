@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 const int UINT_BITS = sizeof(unsigned int) * 8;
+const double POW2_32 = 4294967296.0; // 2^32
 
 struct bn_s
 {
@@ -149,7 +150,8 @@ int bn_shift(bn *t, long long int shift)
 
 	// С этого момента t->BodySize + shift >= 1. Иначе уже произошёл выход из функции.
 
-	// Изменяем размер t. Знак можно не обнулять, он позже скопируется.
+	// Изменяем размер t, если shift > 0.
+	if (shift > 0)
 	{
 		size_t NewSize = (size_t)((long long int)t->BodySize + shift);
 		unsigned int *NewPointer = realloc(t->Body, sizeof(unsigned int) * NewSize);
@@ -160,7 +162,10 @@ int bn_shift(bn *t, long long int shift)
 
 	unsigned int *DestPtr = t->Body;
 	unsigned int *OrigPtr = t->Body;
-	if (shift > 0) { DestPtr += shift; } // DestPtr = max(t->Body, t->Body + shift).
+	if (shift > 0)
+	{
+		DestPtr += shift; // DestPtr = max(t->Body, t->Body + shift).
+	}
 	else
 	{
 		OrigSize += shift; // OrigSize = min(t->BodySize, t->BodySize + shift).
@@ -173,6 +178,14 @@ int bn_shift(bn *t, long long int shift)
 	if (shift > 0)
 	{
 		memset(t->Body, 0, shift * sizeof(unsigned int));
+	}
+	else // Изменяем размер t, если shift < 0.
+	{
+		size_t NewSize = (size_t)((long long int)t->BodySize + shift);
+		unsigned int *NewPointer = realloc(t->Body, sizeof(unsigned int) * NewSize);
+		if (NewPointer == NULL) { return(BN_NO_MEMORY); }
+		t->Body = NewPointer;
+		t->BodySize = NewSize;
 	}
 
 	return(BN_OK);
@@ -222,7 +235,11 @@ int bn_init_string_radix(bn *t, const char *init_string, int radix)
 {
 	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
 
-	memset(t->Body, 0, t->BodySize);
+	int Error = BN_OK;
+
+	Error = bn_resize(t, 1);
+	if (Error) { return(Error); }
+	t->Body[0] = 0;
 	t->Sign = 0;
 
 	size_t StringLength = 0;
@@ -241,12 +258,9 @@ int bn_init_string_radix(bn *t, const char *init_string, int radix)
 	}
 
 	if (!StringLength || FilledWithNulls) { return(BN_OK); } // С пустой строкой нечего делать.
-	t->Sign = Sign; // Для непустой строки ставим знак.
 
-	int Error = BN_OK;
-
-	Error = bn_shrink(t);
-	if (Error) { return(Error); }
+	//Error = bn_shrink(t);
+	//if (Error) { return(Error); }
 
 	bn *Power = bn_new();
 	if (Power == NULL) { return(BN_NO_MEMORY); }
@@ -282,6 +296,8 @@ int bn_init_string_radix(bn *t, const char *init_string, int radix)
 
 	Error = bn_delete(Power);
 	if (Error) { return(Error); }
+
+	t->Sign = Sign; // Для непустой строки ставим знак.
 
 	Error = bn_delete(PoweredDigit);
 	return(Error);
@@ -642,6 +658,135 @@ int bn_mul_to(bn *t, bn const *right)
 
 	return(BN_OK);
 }
+// Деление на (ИСТОРИЧЕСКАЯ ФИГНЯ!!!).
+int bn_div_to(bn *t, bn const *right)
+{
+	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
+	if ((right == NULL) || ((right->Body == NULL))) { return(BN_NULL_OBJECT); }
+
+	// Квадратичный алгоритм?
+
+	if (!right->Sign)
+	{
+		return(BN_DIVIDE_BY_ZERO); // Деление на ноль.
+	}
+	if (!t->Sign)
+	{
+		return(BN_OK); // Деление нуля.
+	}
+
+	if (bn_abs_cmp(right, t) > 0)
+	{
+		bn_resize(t, 1);
+		t->Body[0] = 0;
+		t->Sign = 0;
+
+		return(BN_OK);
+	}
+
+	unsigned long long int Digit = 0; // Текущий знак, который мы собираемся записать в соотвествующий разряд частного.
+
+	bn *ShiftedRight = bn_new(); // Делитель (right) с учетом текущего разряда в алгоритме со столбиком.
+	bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
+
+	bn *MuledShiftedRight = bn_new(); // ShiftedRight умножить на оценку Digit.
+
+	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
+	Num->Sign = 1; // Но модуль.
+
+	bn *Result = bn_new(); // Результат.
+	bn_init_int(Result, t->Sign * right->Sign); // Инициализируем знаком.
+
+	for (size_t i = 0; i <= t->BodySize - right->BodySize; ++i)
+	{
+		Digit = 0;
+
+		if (bn_cmp(Num, ShiftedRight) > 0) // Избегаем ситуации, когда Num меньше Temp.
+		{
+			// Два (один, если размер равен одному) старших блока Num).
+			double DNUM = 0.0;
+
+			// Умноженный на 2^32 старший блок Num.
+			long long unsigned int ShiftedNumB1 = (long long unsigned int)(Num->Body[Num->BodySize - 1]);
+			ShiftedNumB1 <<= 31;
+			ShiftedNumB1 <<= 1;
+
+			DNUM = (double)ShiftedNumB1;
+
+			if (Num->BodySize > 1)
+			{
+				DNUM += (double)(Num->Body[Num->BodySize - 2]); // Еще один блок Num.
+			}
+
+			// Аналогично для ShiftedRight.
+			double DSHIFTEDRIGHT = 0.0;
+
+			// Умноженный на 2^32 старший блок ShiftedRight.
+			long long unsigned int ShiftedRightB1 = (long long unsigned int)(ShiftedRight->Body[ShiftedRight->BodySize - 1]);
+			ShiftedRightB1 <<= 31;
+			ShiftedRightB1 <<= 1;
+
+			DSHIFTEDRIGHT = (double)ShiftedRightB1;
+
+			if (Num->BodySize > 1)
+			{
+				DSHIFTEDRIGHT += (double)(ShiftedRight->Body[ShiftedRight->BodySize - 2]); // Еще один блок ShiftedRight.
+			}
+
+			if (Num->BodySize > ShiftedRight->BodySize)
+			{
+				// На самом деле, возможен только вариант с разницой размеров в единицу.
+				DSHIFTEDRIGHT /= POW2_32;
+			}
+
+			Digit = (unsigned int)(DNUM / DSHIFTEDRIGHT);
+
+			/*printf("Digit: %u \n", Digit);
+			if (Digit > UINT_MAX)
+			{
+				printf("ALERT!!!\n");
+			}*/
+
+			bn_copy(MuledShiftedRight, ShiftedRight);
+			bn_mul_to_uint(MuledShiftedRight, (unsigned int)Digit);
+
+			//printf("MSR: \n");
+			//bn_print_formula(MuledShiftedRight);
+			bn_sub_to(Num, MuledShiftedRight);
+			//printf("New Num: \n");
+			//bn_print_formula(Num);
+
+			while (Num->Sign < 0)
+			{
+				bn_add_to(Num, ShiftedRight);
+				--Digit;
+			}
+
+			while (bn_cmp(Num, ShiftedRight) > 0)
+			{
+				bn_sub_to(Num, ShiftedRight);
+				++Digit;
+			}
+
+			//printf("Corrected Num: \n");
+			//bn_print_formula(Num);
+		}
+
+		Result->Body[0] = (unsigned int)Digit;
+		bn_shift(Result, 1);
+		bn_shift(ShiftedRight, -1);
+	}
+	
+	bn_shrink(Result);
+	bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
+
+	bn_delete(ShiftedRight);
+	bn_delete(MuledShiftedRight);
+	bn_delete(Num);
+	bn_delete(Result);
+
+	return(BN_OK);
+}
 
 // Умножение на маленькое число.
 int bn_mul_to_uint(bn *t, unsigned int multipler)
@@ -743,14 +888,14 @@ int bn_pow_to(bn *t, int degree)
 // TODO: нехорошая вещь может случиться при сравнении чисел с зарезервированной пустой памятью (размер Body не соответствует числу).
 int bn_cmp(bn const *left, bn const *right)
 {
-	if (left->BodySize | right->BodySize) // Вроде, | быстрее ||.
+	if (left->BodySize || right->BodySize)
 	{
 		if (left->Sign + right->Sign)
 		{
 			if (left->BodySize == right->BodySize)
 			{
-				if (left->Body[left->BodySize - 1] > left->Body[left->BodySize - 1]) { return(1); }
-				else if (left->Body[left->BodySize - 1] == left->Body[left->BodySize - 1]) { return(0); }
+				if (left->Body[left->BodySize - 1] > right->Body[right->BodySize - 1]) { return(1); }
+				else if (left->Body[left->BodySize - 1] == right->Body[right->BodySize - 1]) { return(0); }
 				else { return(-1); }
 			}
 			else
@@ -761,6 +906,27 @@ int bn_cmp(bn const *left, bn const *right)
 		else
 		{
 			return((left->Sign - right->Sign) / 2); // Хочу, чтобы было не -2 и 2, а -1 и 1.
+		}
+	}
+	else
+	{
+		return(0);
+	}
+}
+// Сравнение по модулю.
+int bn_abs_cmp(bn const *left, bn const *right)
+{
+	if (left->BodySize || right->BodySize)
+	{
+		if (left->BodySize == right->BodySize)
+		{
+			if (left->Body[left->BodySize - 1] > right->Body[right->BodySize - 1]) { return(1); }
+			else if (left->Body[left->BodySize - 1] == right->Body[right->BodySize - 1]) { return(0); }
+			else { return(-1); }
+		}
+		else
+		{
+			return((left->BodySize > right->BodySize) - (right->BodySize > left->BodySize));
 		}
 	}
 	else
