@@ -42,6 +42,9 @@ int bn_mod_to(bn *t, bn const *right);
 int bn_mul_to_uint(bn *t, unsigned int multipler);
 int bn_mul_to_int(bn *t, int multipler);
 
+// Деление (с остатком) на маленькое число.
+int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode);
+
 // Возвести число в степень degree
 int bn_pow_to(bn *t, int degree);
 // Извлечь корень степени reciprocal из BN (бонусная функция)

@@ -181,6 +181,53 @@ int custom_fibonacci_sign_test()
 	return(0);
 }
 
+// Деление (с остатком) большого числа на unsigned int.
+int div_mod_to_uint_test()
+{
+	while (1)
+	{
+		printf("Division to unsigned int test.\n\n");
+		char String[1024];
+
+		bn *BN = bn_new();
+		int Integer = 0;
+
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN, String);
+
+		printf("BN: \n");
+		bn_print_formula(BN);
+
+		printf("\n");
+
+		printf("Integer: ");
+		scanf("%u", &Integer);
+
+		// ДЕЛЕНИЕ.
+		bn_div_mod_to_uint(BN, Integer, 0);
+
+		printf("\n");
+		bn_print_hex(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_init_string(BN, String);
+
+		// ОСТАТОК.
+		bn_div_mod_to_uint(BN, Integer, 1);
+
+		printf("\n");
+		bn_print_hex(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
 // Умножение большого числа на int.
 int mul_to_int_test()
 {
@@ -461,7 +508,9 @@ int main()
 
 	//radix_test();
 
-	mod_test();
+	//mod_test();
+
+	div_mod_to_uint_test();
 
 	return(0);
 }

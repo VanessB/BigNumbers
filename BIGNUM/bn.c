@@ -4,6 +4,8 @@
 #include <stdlib.h> // Для abs().
 #include <stdio.h>
 
+#include <math.h> // Для log().
+
 const int UINT_BITS = sizeof(unsigned int) * 8;
 const double POW2_32 = 4294967296.0; // 2^32
 
@@ -232,7 +234,7 @@ bn *bn_init(bn const *orig)
 // Инициализировать значение BN десятичным представлением строки
 int bn_init_string(bn *t, const char *init_string)
 {
-	bn_init_string_radix(t, init_string, 10);
+	return(bn_init_string_radix(t, init_string, 10));
 }
 
 // Инициализировать значение BN представлением строки
@@ -690,7 +692,7 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 		return(BN_OK);
 	}
 
-	unsigned long long int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
+	long long unsigned int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
 
 	bn *ShiftedRight = bn_new(); // Делитель (right) с учетом текущего разряда в алгоритме со столбиком.
 	bn_copy_shift(ShiftedRight, right, t->BodySize - right->BodySize);
@@ -1003,6 +1005,90 @@ int bn_mul_to_int(bn *t, int multipler)
 	return(bn_mul_to_uint(t, (unsigned int)multipler));
 }
 
+// Деление (с остатком) на маленькое число.
+int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
+{
+	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
+
+	// Квадратичный алгоритм?
+
+	if (!divider)
+	{
+		return(BN_DIVIDE_BY_ZERO); // Деление на ноль.
+	}
+	if (!t->Sign)
+	{
+		return(BN_OK); // Деление нуля.
+	}
+
+	if ((t->BodySize == 1) && (t->Body[0] < divider))
+	{
+		bn_resize(t, 1);
+		t->Body[0] = 0;
+		t->Sign = 0;
+
+		return(BN_OK);
+	}
+
+	long long unsigned int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
+
+	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
+	Num->Sign = 1; // Но модуль.
+
+	bn *Result = bn_new(); // Результат.
+	bn_init_int(Result, t->Sign); // Инициализируем знаком.
+
+	for (size_t i = 0; i < t->BodySize; ++i)
+	{
+		Digit = 0;
+
+		// Избегаем ситуации, когда Num меньше divider * 2^(32*i).
+		if ((Num->Body[Num->BodySize - 1] > divider) || (Num->BodySize > t->BodySize - i))
+		{
+			if (Num->BodySize == t->BodySize - i)
+			{
+				Digit = (long long unsigned int)(Num->Body[Num->BodySize - 1] / divider);
+				Num->Body[Num->BodySize - 1] -= (unsigned int)Digit*divider;
+			}
+			else
+			{
+				Digit = 
+				(
+					( ((long long unsigned int)(Num->Body[Num->BodySize - 1]) << 31 ) << 1) +
+					(long long unsigned int)(Num->Body[Num->BodySize - 2])
+				) /
+				(long long unsigned int)divider;
+
+				Num->Body[Num->BodySize - 1] = 0;
+				Num->Body[Num->BodySize - 2] -= (unsigned int)(Digit*((long long unsigned int)divider) & UINT_MAX);
+			}
+
+			bn_shrink(Num);
+		}
+
+		Result->Body[0] = (unsigned int)Digit;
+		bn_shift(Result, 1);
+	}
+
+	bn_shrink(Result);
+	// Деление.
+	if (mode == 0)
+	{
+		bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
+	}
+	// Остаток
+	else if (mode == 1)
+	{
+		bn_copy(t, Num);
+		// Надо еще подумать, как в этом случае лучше избежать подсчета Result...
+	}
+
+	bn_delete(Num);
+	bn_delete(Result);
+
+	return(BN_OK);
+}
+
 // Возвести число в степень degree
 int bn_pow_to(bn *t, int degree)
 {
@@ -1131,8 +1217,28 @@ bn* bn_mod(bn const *left, bn const *right)
 	return(t);
 }
 
+// Выдать представление BN в системе счисления radix в виде строки
+// Строку после использования потребуется удалить.
+// ИСТОРИИИЧЕСКАЯ ФИГНЯ!!1!!!1
+const char *bn_to_string(bn const *t, int radix)
+{
+	if ((radix > 36) || (radix < 2))
+	{
+		// Бред.
+		return(NULL);
+	}
+
+	char *str = NULL;
+	char *tempstr = NULL;
+
+	size_t Size = (size_t)((double)(t->BodySize)*(log(POW2_32) / log(radix))) + 1; // Верхняя оценка длины строки.
+	tempstr = calloc(Size, sizeof(char));
+
+	return(str);
+}
+
 // Если левое меньше, вернуть <0; если равны, вернуть 0; иначе >0
-// TODO: нехорошая вещь может случиться при сравнении чисел с зарезервированной пустой памятью (размер Body не соответствует числу).
+// HINT: нехорошая вещь может случиться при сравнении чисел с зарезервированной пустой памятью (размер Body не соответствует числу).
 int bn_cmp(bn const *left, bn const *right)
 {
 	if (left->BodySize || right->BodySize)
