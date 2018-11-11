@@ -1010,6 +1010,7 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 {
 	if ((t == NULL) || ((t->Body == NULL))) { return(BN_NULL_OBJECT); }
 
+	// TODO: тут вполне можно убрать постоянные shrink и вручную следить за длиной числа Num.
 	// Квадратичный алгоритм?
 
 	if (!divider)
