@@ -597,36 +597,6 @@ int bn_add_to(bn *t, bn const *right)
 			}
 
 			return(BN_OK);
-
-			// Старая реализация через отдельную функцию беззнакового сложения.
-			/*
-			if (t->Sign + right->Sign) // Выполняется, если одинаковые знаки.
-			{
-				return(bn_unsigned_add_to(t, right, 1));
-			}
-			else
-			{
-				if (t->Sign == -1)
-				{
-					bn_twos_complement(t);
-					int Result = bn_unsigned_add_to(t, right, 0);
-
-					// Если в результате отрицательное число, переводим в нормальную форму.
-					if (t->Sign == -1) { bn_reverse_twos_complement(t); }
-				}
-				else
-				{
-					// Какой ужас! Правое значение надо переписать в доп код, а оно константно!
-					// А кто сказал, что доп код - это только для отрицательных чисел?
-					// Теперь положительное число записываем в доп коде.
-					// Если результат тоже окажется положительным, то он будет в доп коде.
-
-					bn_twos_complement(t);
-					int Result = bn_unsigned_add_to(t, right, 0);
-					if (t->Sign == 1) { bn_reverse_twos_complement(t); } // Если в результате положительное число, переводим в нормальную форму.
-				}
-			}
-			*/
 		}
 		else
 		{
@@ -897,22 +867,11 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 		return(Error);
 	}
 
+	// Сейчас будет куча дичи с обработкой результатов для отрицательных делителя/делимого...
 	switch (mode)
 	{
 		case 0: // Деление.
 		{
-			if (Result->Sign < 0)
-			{
-				Error = bn_add_to_int(Result, -1); // Округление числа вниз, а не его модуля.
-				if (Error)
-				{
-					bn_delete(ShiftedRight);
-					bn_delete(MuledShiftedRight);
-					bn_delete(Num);
-					bn_delete(Result);
-					return(Error);
-				}
-			}
 			Error = bn_copy_shift(t, Result, -1); // Мой дебильный алгоритм дает ответ с лишним сдвигом на один блок.
 			if (Error)
 			{
@@ -922,6 +881,19 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 				bn_delete(Result);
 				return(Error);
 			}
+
+			if ((t->Sign < 0) && Num->Sign)
+			{
+				Error = bn_add_to_int(t, -1); // Округление частного вниз, а не модуля частного.
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
+			}
 			break;
 		}
 		case 1: // Остаток
@@ -929,7 +901,8 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 			if ((Result->Sign < 0) && Num->Sign)
 			{
 				// Остаток не от деления модуля, а от деления числа.
-				Error = bn_sub_to(Num, right);
+				if (right->Sign > 0) { Error = bn_sub_to(Num, right); }
+				else { Error = bn_add_to(Num, right); }
 				if (Error)
 				{
 					bn_delete(ShiftedRight);
@@ -948,6 +921,10 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 					bn_delete(Result);
 					return(Error);
 				}
+			}
+			else if (right->Sign < 0) // В этом случае Num - модуль отрицательного остатка.
+			{
+				Num->Sign = -1;
 			}
 			Error = bn_copy(t, Num);
 			if (Error)
@@ -1115,6 +1092,8 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 	// TODO: тут вполне можно убрать постоянные shrink и вручную следить за длиной числа Num.
 	// Квадратичный алгоритм?
 
+	int Error = BN_OK;
+
 	if (!divider)
 	{
 		return(BN_DIVIDE_BY_ZERO); // Деление на ноль.
@@ -1148,10 +1127,22 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 	long long unsigned int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
 
 	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
+	if (Num == NULL) { return(NULL); }
 	Num->Sign = 1; // Но модуль.
 
 	bn *Result = bn_new(); // Результат.
-	bn_init_int(Result, t->Sign); // Инициализируем знаком.
+	if (Num == NULL)
+	{
+		bn_delete(Num);
+		return(BN_NO_MEMORY);
+	}
+	Error = bn_init_int(Result, t->Sign); // Инициализируем знаком.
+	if (Error)
+	{
+		bn_delete(Num);
+		bn_delete(Result);
+		return(Error);
+	}
 
 	for (size_t i = 0; i < t->BodySize; ++i)
 	{
@@ -1178,14 +1169,32 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 				Num->Body[Num->BodySize - 2] -= (unsigned int)(Digit*((long long unsigned int)divider) & UINT_MAXV);
 			}
 
-			bn_shrink(Num);
+			Error = bn_shrink(Num);
+			if (Error)
+			{
+				bn_delete(Num);
+				bn_delete(Result);
+				return(Error);
+			}
 		}
 
 		Result->Body[0] = (unsigned int)Digit;
-		bn_shift(Result, 1);
+		Error = bn_shift(Result, 1);
+		if (Error)
+		{
+			bn_delete(Num);
+			bn_delete(Result);
+			return(Error);
+		}
 	}
 
-	bn_shrink(Result);
+	Error = bn_shrink(Result);
+	if (Error)
+	{
+		bn_delete(Num);
+		bn_delete(Result);
+		return(Error);
+	}
 
 	switch (mode)
 	{
@@ -1365,7 +1374,7 @@ const char *bn_to_string(bn const *t, int radix)
 
 	char *tempstr = NULL;
 
-	size_t Size = (size_t)((double)(t->BodySize)*(log(POW2_32) / log(radix))) + 1; // Верхняя оценка длины строки.
+	size_t Size = (size_t)((double)(t->BodySize)*(log(POW2_32) / log(radix) + 1)); // Верхняя оценка длины строки.
 	tempstr = calloc(Size, sizeof(char));
 
 	bn *MOD = bn_new();
@@ -1381,6 +1390,11 @@ const char *bn_to_string(bn const *t, int radix)
 	size_t i = 0;
 	while (COPY->Sign)
 	{
+		if (i == 57)
+		{
+			i = i;
+		}
+
 		Error = bn_copy(MOD, COPY);
 		if (Error) { return(NULL); }
 

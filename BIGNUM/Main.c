@@ -145,6 +145,55 @@ int addition_test()
 	return(0);
 }
 
+// Вычитание двух вводимых чисел.
+int substitution_test()
+{
+	while (1)
+	{
+		printf("Substitution test.\n\n");
+		char String[1024];
+
+		bn *BN1 = bn_new();
+
+		printf("First big number 1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN1, String);
+
+		printf("BN1: \n");
+		bn_print_hex(BN1);
+
+
+		printf("\n");
+
+
+		bn *BN2 = bn_new();
+
+		printf("Second big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN2, String);
+
+		printf("BN2: \n");
+		bn_print_hex(BN2);
+
+		// ВЫЧИТАНИЕ.
+		bn_sub_to(BN1, BN2);
+
+		const char *str = bn_to_string(BN1, 10);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
+
+		bn_delete(BN1);
+		bn_delete(BN2);
+	}
+
+	return(0);
+}
+
 // Нахождение N-ого элемента последовательности Фибоначчи.
 int fibonacci_test()
 {
@@ -387,41 +436,46 @@ int division_test()
 	while (1)
 	{
 		printf("Division test.\n\n");
-		char String[1024];
-
-		unsigned int Radix = 2;
-		printf("Radix: ");
-		scanf("%u", &Radix);
+		char String1[1024];
+		char String2[1024];
 
 		bn *BN1 = bn_new();
 
 		printf("First big number (1024 symbols max): ");
-		scanf("%s", String);
-		bn_init_string_radix(BN1, String, Radix);
-
-		printf("BN1: \n");
-		bn_print_formula(BN1);
-
+		scanf("%s", String1);
+		bn_init_string(BN1, String1);
 
 		printf("\n");
-
 
 		bn *BN2 = bn_new();
 
 		printf("Second big number (1024 symbols max): ");
-		scanf("%s", String);
-		bn_init_string_radix(BN2, String, Radix);
+		scanf("%s", String2);
+		bn_init_string(BN2, String2);
 
-		printf("BN2: \n");
-		bn_print_formula(BN2);
-
-		// Деление.
+		// ДЕЛЕНИЕ.
 		bn_div_to(BN1, BN2);
 
+		const char *str = bn_to_string(BN1, 10);
+
 		printf("\n");
-		bn_print_hex(BN1);
+		printf("%s", str);
 		printf("\n");
 		printf("\n");
+
+		bn_init_string(BN1, String1);
+
+		// ДЕЛЕНИЕ С ОСТАТКОМ.
+		bn_mod_to(BN1, BN2);
+
+		str = bn_to_string(BN1, 10);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
 
 		bn_delete(BN1);
 		bn_delete(BN2);
@@ -569,9 +623,11 @@ int shift_test()
 int main()
 {
 	//addition_test();
+	substitution_test();
 	//fibonacci_test();
 
 	//multiplication_test();
+	//division_test();
 	//factorial_test();
 	//custom_fibonacci_sign_test();
 
@@ -583,7 +639,7 @@ int main()
 
 	//radix_out_test();
 
-	add_to_int_test();
+	//add_to_int_test();
 
 	return(0);
 }
