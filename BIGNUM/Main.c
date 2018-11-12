@@ -3,6 +3,10 @@
 #include <string.h>
 #include "bn.h"
 
+//#define _CRTDBG_MAP_ALLOC
+//#include <stdlib.h>
+//#include <crtdbg.h>  
+
 // Ввод числа в системе счисления radix.
 int radix_test()
 {
@@ -57,6 +61,10 @@ int radix_out_test()
 
 		free(str);
 		bn_delete(BN);
+
+		//_CrtDumpMemoryLeaks();
+
+		return(0);
 	}
 
 	return(0);
@@ -299,6 +307,45 @@ int custom_fibonacci_sign_test()
 	return(0);
 }
 
+// Умножение большого числа на int.
+int mul_to_int_test()
+{
+	while (1)
+	{
+		printf("Multiplication to int test.\n\n");
+		char String[1024];
+
+		bn *BN = bn_new();
+		int Integer = 0;
+
+		printf("Big number (hex, 1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string_radix_pow2(BN, String, 16);
+
+		printf("BN: \n");
+		bn_print_formula(BN);
+
+
+		printf("\n");
+
+
+		printf("Integer: ");
+		scanf("%d", &Integer);
+
+		// УМНОЖЕНИЕ.
+		bn_mul_to_int(BN, Integer);
+
+		printf("\n");
+		bn_print_formula(BN);
+		printf("\n");
+		printf("\n");
+
+		bn_delete(BN);
+	}
+
+	return(0);
+}
+
 // Деление (с остатком) большого числа на unsigned int.
 int div_mod_to_uint_test()
 {
@@ -346,45 +393,6 @@ int div_mod_to_uint_test()
 	return(0);
 }
 
-// Умножение большого числа на int.
-int mul_to_int_test()
-{
-	while (1)
-	{
-		printf("Multiplication to int test.\n\n");
-		char String[1024];
-
-		bn *BN = bn_new();
-		int Integer = 0;
-
-		printf("Big number (hex, 1024 symbols max): ");
-		scanf("%s", String);
-		bn_init_string_radix_pow2(BN, String, 16);
-
-		printf("BN: \n");
-		bn_print_formula(BN);
-
-
-		printf("\n");
-
-
-		printf("Integer: ");
-		scanf("%d", &Integer);
-
-		// УМНОЖЕНИЕ.
-		bn_mul_to_int(BN, Integer);
-
-		printf("\n");
-		bn_print_formula(BN);
-		printf("\n");
-		printf("\n");
-
-		bn_delete(BN);
-	}
-
-	return(0);
-}
-
 // Умножение больших чисел.
 int multiplication_test()
 {
@@ -415,7 +423,7 @@ int multiplication_test()
 		printf("BN2: \n");
 		bn_print_hex(BN2);
 
-		// Умножение.
+		// УМНОЖЕНИЕ.
 		bn_mul_to(BN1, BN2);
 
 		printf("\n");
@@ -428,6 +436,74 @@ int multiplication_test()
 	}
 
 	return(0);
+}
+
+int power_test()
+{
+	while (1)
+	{
+		printf("Power to test.\n\n");
+		char String[1024];
+
+		bn *BN1 = bn_new();
+
+		printf("First big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN1, String);
+
+		printf("\n");
+
+		int power = 1;
+		printf("Power: ");
+		scanf("%d", &power);
+
+		// ВОЗВЕДЕНИЕ В СТЕПЕНЬ.
+		bn_pow_to(BN1, power);
+
+		const char *str = bn_to_string(BN1, 10);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
+		bn_delete(BN1);
+	}
+
+	return(0);
+}
+
+// Нахождение факториала N.
+int factorial_test()
+{
+	printf("Factorial test.\n\n");
+	printf("Enter N: ");
+	long long unsigned int N = 0;
+	scanf("%llu", &N);
+
+	bn *Step = bn_new();
+	bn_init_int(Step, 1);
+
+	bn *CurrN = bn_new();
+	bn_init_int(CurrN, 2);
+
+	bn *Factorial = bn_new();
+	bn_init_int(Factorial, 1);
+
+	for (long long unsigned int i = 1; i < N; ++i)
+	{
+		bn_mul_to(Factorial, CurrN);
+		bn_add_to(CurrN, Step);
+	}
+
+	bn_print_hex(Factorial);
+
+	bn_delete(Step);
+	bn_delete(CurrN);
+	bn_delete(Factorial);
+
+	return(BN_OK);
 }
 
 // Деление больших чисел.
@@ -533,38 +609,6 @@ int mod_test()
 	return(0);
 }
 
-// Нахождение факториала N.
-int factorial_test()
-{
-	printf("Factorial test.\n\n");
-	printf("Enter N: ");
-	long long unsigned int N = 0;
-	scanf("%llu", &N);
-
-	bn *Step = bn_new();
-	bn_init_int(Step, 1);
-
-	bn *CurrN = bn_new();
-	bn_init_int(CurrN, 2);
-
-	bn *Factorial = bn_new();
-	bn_init_int(Factorial, 1);
-
-	for (long long unsigned int i = 1; i < N; ++i)
-	{
-		bn_mul_to(Factorial, CurrN);
-		bn_add_to(CurrN, Step);
-	}
-
-	bn_print_hex(Factorial);
-
-	bn_delete(Step);
-	bn_delete(CurrN);
-	bn_delete(Factorial);
-
-	return(BN_OK);
-}
-
 // Проверка функции сдвига числа.
 int shift_test()
 {
@@ -622,24 +666,23 @@ int shift_test()
 
 int main()
 {
-	//addition_test();
-	substitution_test();
-	//fibonacci_test();
-
-	//multiplication_test();
-	//division_test();
-	//factorial_test();
-	//custom_fibonacci_sign_test();
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 	//radix_test();
-
-	//mod_test();
-
-	//div_mod_to_uint_test();
-
-	//radix_out_test();
+	radix_out_test();
 
 	//add_to_int_test();
+	//addition_test();
+	//substitution_test();
+	//fibonacci_test();
+	//custom_fibonacci_sign_test();
+
+	//multiplication_test();
+	//power_test();
+	//factorial_test();
+	//div_mod_to_uint_test();
+	//division_test();
+	//mod_test();
 
 	return(0);
 }

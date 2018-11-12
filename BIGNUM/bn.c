@@ -231,6 +231,8 @@ bn *bn_new()
 // Создать копию существующего BN
 bn *bn_init(bn const *orig)
 {
+	if ((orig == NULL) || (orig->Body == NULL)) { return(NULL); }
+
 	bn *NewBN = malloc(sizeof(bn));
 	if (NewBN == NULL) { return(NULL); }
 	NewBN->BodySize = orig->BodySize;
@@ -1127,7 +1129,7 @@ int bn_div_mod_to_uint(bn *t, unsigned int divider, int mode)
 	long long unsigned int Digit = 0; // Текущий блок, который мы собираемся записать в соотвествующий разряд частного.
 
 	bn *Num = bn_init(t); // Для вычитания в алгоритме деления столбиком (инициализируется делимым (t)).
-	if (Num == NULL) { return(NULL); }
+	if (Num == NULL) { return(BN_NO_MEMORY); }
 	Num->Sign = 1; // Но модуль.
 
 	bn *Result = bn_new(); // Результат.
@@ -1246,35 +1248,88 @@ int bn_pow_to(bn *t, int degree)
 	}
 
 	int Error = BN_OK;
+
 	if (degree > 1)
 	{
-		if (degree % 2)
+		bn *copy = bn_new();
+		if (copy == NULL) { return(BN_NO_MEMORY); }
+
+		// Ищем degree_pow2 такое, что 2^degree_pow2 <= degree, а 2^(degree_pow2 + 1) > degree.
+		unsigned int degree_pow2 = UINT_BITS - 2; // Один бит на знак, один - на 2^0.
+		unsigned int checker = 1;
+		checker <<= (UINT_BITS - 2); //checker = b01000000000000000000000000000000.
+		while (!(checker & degree))
+		{
+			--degree_pow2;
+			checker >>= 1;
+		}
+
+		if (degree != (1 << degree_pow2))
 		{
 			bn *orig = bn_init(t);
 			if (orig == NULL) { return(BN_NO_MEMORY); }
 
-			for (int i = 0; i < degree / 2; ++i)
+			for (unsigned int i = 0; i < degree_pow2; ++i)
 			{
 				// Быстрее умножать "пирамидкой".
-				Error = bn_mul_to(t, t);
-				if (Error) { return(Error); }
+				Error = bn_copy(copy, t);
+				if (Error)
+				{
+					bn_delete(orig);
+					bn_delete(copy);
+					return(Error);
+				}
+
+				Error = bn_mul_to(t, copy);
+				if (Error)
+				{
+					bn_delete(orig);
+					bn_delete(copy);
+					return(Error);
+				}
 			}
-			
-			Error = bn_mul_to(t, orig);
-			if (Error) { return(Error); }
+
+			for (int i = (1 << degree_pow2); i < degree; ++i)
+			{
+				Error = bn_mul_to(t, orig);
+				if (Error)
+				{
+					bn_delete(orig);
+					bn_delete(copy);
+					return(Error);
+				}
+			}
 
 			Error = bn_delete(orig);
-			if (Error) { return(Error); }
+			if (Error)
+			{
+				bn_delete(copy);
+				return(Error);
+			}
 		}
 		else
 		{
-			for (int i = 0; i < degree / 2; ++i)
+			for (unsigned int i = 0; i < degree_pow2; ++i)
 			{
 				// Быстрее умножать "пирамидкой".
-				Error = bn_mul_to(t, t);
-				if (Error) { return(Error); }
+				Error = bn_copy(copy, t);
+				if (Error)
+				{
+					bn_delete(copy);
+					return(Error);
+				}
+
+				Error = bn_mul_to(t, copy);
+				if (Error)
+				{
+					bn_delete(copy);
+					return(Error);
+				}
 			}
 		}
+
+		Error = bn_delete(copy);
+		if (Error) { return(Error); }
 	}
 	else
 	{
