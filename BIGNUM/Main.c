@@ -438,6 +438,7 @@ int multiplication_test()
 	return(0);
 }
 
+// Возведение в степень.
 int power_test()
 {
 	while (1)
@@ -459,6 +460,43 @@ int power_test()
 
 		// ВОЗВЕДЕНИЕ В СТЕПЕНЬ.
 		bn_pow_to(BN1, power);
+
+		const char *str = bn_to_string(BN1, 10);
+
+		printf("\n");
+		printf("%s", str);
+		printf("\n");
+		printf("\n");
+
+		free(str);
+		bn_delete(BN1);
+	}
+
+	return(0);
+}
+
+// Нахождение корня.
+int root_test()
+{
+	while (1)
+	{
+		printf("Root to test.\n\n");
+		char String[1024];
+
+		bn *BN1 = bn_new();
+
+		printf("Big number (1024 symbols max): ");
+		scanf("%s", String);
+		bn_init_string(BN1, String);
+
+		printf("\n");
+
+		int reciprocal = 1;
+		printf("Reciprocal: ");
+		scanf("%d", &reciprocal);
+
+		// НАХОЖДЕНИЯ КОРНЯ.
+		bn_root_to(BN1, reciprocal);
 
 		const char *str = bn_to_string(BN1, 10);
 
@@ -669,7 +707,7 @@ int main()
 	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 	//radix_test();
-	radix_out_test();
+	//radix_out_test();
 
 	//add_to_int_test();
 	//addition_test();
@@ -679,9 +717,10 @@ int main()
 
 	//multiplication_test();
 	//power_test();
+	//root_test();
 	//factorial_test();
 	//div_mod_to_uint_test();
-	//division_test();
+	division_test();
 	//mod_test();
 
 	return(0);

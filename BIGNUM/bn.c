@@ -1,4 +1,4 @@
-//#define CONTEST
+#define CONTEST
 
 #ifndef CONTEST
 #include "bn.h"
@@ -18,8 +18,8 @@ enum bn_codes
 };
 #endif
 
-const int UINT_MAXV = 0xffffffff;
-const int UINT_BITS = sizeof(unsigned int) * 8;
+const unsigned int UINT_MAXV = 0xffffffff;
+const unsigned int UINT_BITS = sizeof(unsigned int) * 8;
 const double POW2_32 = 4294967296.0; // 2^32
 
 int bn_add_to_int(bn *t, int additor);
@@ -775,7 +775,7 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 
 			DSHIFTEDRIGHT = (double)ShiftedRightB1;
 
-			if (Num->BodySize > 1)
+			if (ShiftedRight->BodySize > 1)
 			{
 				DSHIFTEDRIGHT += (double)(ShiftedRight->Body[ShiftedRight->BodySize - 2]); // Еще один блок ShiftedRight.
 			}
@@ -792,7 +792,7 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 			if (Digit > UINT_MAXV)
 			{
 				Digit = UINT_MAXV; // Просто неточность оценки.
-				printf("ALERT!!!\n");
+				//printf("ALERT!!!\n");
 			}
 
 			Error = bn_copy(MuledShiftedRight, ShiftedRight);
@@ -900,7 +900,7 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 		}
 		case 1: // Остаток
 		{
-			if ((Result->Sign < 0) && Num->Sign)
+			/*if ((Result->Sign < 0) && Num->Sign)
 			{
 				// Остаток не от деления модуля, а от деления числа.
 				if (right->Sign > 0) { Error = bn_sub_to(Num, right); }
@@ -927,7 +927,34 @@ int bn_div_mod_to(bn *t, bn const *right, int mode)
 			else if (right->Sign < 0) // В этом случае Num - модуль отрицательного остатка.
 			{
 				Num->Sign = -1;
+			}*/
+
+			if ((t->Sign * right->Sign < 0) && (Num->Sign != 0))
+			{
+				if (right->Sign > 0)
+				{
+					Error = bn_sub_to(Num, right);
+					Num->Sign = -Num->Sign;
+				}
+				else
+				{
+					Error = bn_add_to(Num, right);
+					//Num->Sign = -Num->Sign;
+				}
+				if (Error)
+				{
+					bn_delete(ShiftedRight);
+					bn_delete(MuledShiftedRight);
+					bn_delete(Num);
+					bn_delete(Result);
+					return(Error);
+				}
 			}
+			else if (right->Sign < 0)
+			{
+				Num->Sign = -Num->Sign;
+			}
+
 			Error = bn_copy(t, Num);
 			if (Error)
 			{
@@ -1227,15 +1254,12 @@ int bn_pow_to(bn *t, int degree)
 	// Отсеиваем случаи с 1 и -1.
 	if ((t->BodySize == 1) && (t->Body[0] == 1))
 	{
-		if (t->Sign == 1)
-		{
-			return(BN_OK);
-		}
-		else if (t->Sign == -1)
+		if (t->Sign == -1)
 		{
 			// Знак меняется при нечетной степени.
 			t->Sign = 1 - 2 * (abs(degree) % 2);
 		}
+		return(BN_OK);
 	}
 
 	if (degree == 1)
@@ -1344,6 +1368,73 @@ int bn_pow_to(bn *t, int degree)
 // Извлечь корень степени reciprocal из BN (бонусная функция)
 int bn_root_to(bn *t, int reciprocal)
 {
+	if ((t == NULL) || (t->Body == NULL)) { return(BN_NULL_OBJECT); }
+	if (t->Sign == 0) { return(BN_OK); }
+
+	if (reciprocal == 1) { return(BN_OK); }
+	else if (reciprocal < 1) { return(BN_OK); }
+
+	bn *current_x = bn_init(t); // Стартовая позиция.
+	bn_div_mod_to_uint(current_x, (unsigned int)(reciprocal), 0);
+
+	bn *next_x = bn_init(current_x); // Седующий шаг.
+
+	bn *powered_cx = bn_new();
+	bn *copy = bn_new();
+	
+	char flag = 0;
+	int i = 0;
+	while (1)
+	{
+		++i;
+		// В начале каждого шага current_x = next_x.
+
+		bn_mul_to_int(next_x, reciprocal - 1); // X_(k+1) = (r - 1) * X_k.
+
+		bn_copy(powered_cx, current_x);
+		bn_pow_to(powered_cx, reciprocal - 1); // powered_cx = (X_k)^(r - 1).
+
+		bn_copy(copy, t);
+		bn_div_to(copy, powered_cx); // copy = t / (X_k)^(r - 1).
+
+		bn_add_to(next_x, copy); // X_(k+1) = (r - 1) * X_k  +  t / (X_k)^(r - 1).
+		bn_div_mod_to_uint(next_x, (unsigned int)reciprocal, 0); //X_(k + 1) = ( (r - 1) * X_k + t / (X_k) ^ (r - 1) )/n.
+
+		/*if (!bn_cmp(current_x, next_x))
+		{
+			break;
+		}*/
+
+		bn_sub_to(current_x, next_x);
+		/*const char *str = bn_to_string(current_x, 10);
+		printf("%s", str);
+		printf("\n");
+		free(str);
+		printf("%d", i);
+		printf("\n");*/
+
+		if (current_x->BodySize == 1 && current_x->Body[0] <= 1)
+		{
+			if (flag)
+			{
+				break;
+			}
+			else
+			{
+				flag = 1;
+			}
+		}
+
+		bn_copy(current_x, next_x);
+	}
+
+	bn_copy(t, next_x);
+
+	bn_delete(current_x);
+	bn_delete(next_x);
+	bn_delete(powered_cx);
+	bn_delete(copy);
+
 	return(BN_OK); // Заглушка.
 }
 
@@ -1445,10 +1536,11 @@ const char *bn_to_string(bn const *t, int radix)
 	size_t i = 0;
 	while (COPY->Sign)
 	{
-		if (i == 57)
-		{
-			i = i;
-		}
+		// Для отладки...
+		//if (i == 57)
+		//{
+		//	i = i;
+		//}
 
 		Error = bn_copy(MOD, COPY);
 		if (Error) { return(NULL); }
@@ -1475,6 +1567,8 @@ const char *bn_to_string(bn const *t, int radix)
 	}
 
 	// Теперь переворачиваем строку.
+	bn_delete(MOD);
+	bn_delete(COPY);
 
 	// Резервируем место под знак, если надо.
 	size_t j = 0;
