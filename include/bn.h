@@ -4,7 +4,7 @@ struct bn_s;
 typedef struct bn_s bn;
 enum bn_codes
 {
-	BN_OK, BN_NULL_OBJECT, BN_NO_MEMORY, BN_DIVIDE_BY_ZERO
+    BN_OK, BN_NULL_OBJECT, BN_NO_MEMORY, BN_DIVIDE_BY_ZERO
 };
 
 
