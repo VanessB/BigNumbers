@@ -7,203 +7,202 @@
 //#include <stdlib.h>
 //#include <crtdbg.h>
 
+#define TEST_RADIX
+#define TEST_RADIX_OUT
+#define TEST_ADD_TO_INT
+#define TEST_ADDITION
+#define TEST_SUBSTITUTION
+#define TEST_FIBONACCI
+#define TEST_CUSTOM_FIBONACCI_SIGN
+#define TEST_MULTIPLICATION
+#define TEST_POWER
+#define TEST_ROOT
+#define TEST_FACTORIAL
+#define TEST_DIV_MOD_TO_UINT
+#define TEST_DIVISION
+#define TEST_MOD
+#define TEST_SHIFT
+
 // Ввод числа в системе счисления radix.
-int radix_test()
+int radix()
 {
-    while (1)
-    {
-        printf("Radix test.\n\n");
-        char String[1024];
+    printf("Radix test.\n\n");
+    char String[1024];
 
-        unsigned int Radix = 2;
-        printf("Radix: ");
-        scanf("%u", &Radix);
+    unsigned int Radix = 2;
+    printf("Radix: ");
+    scanf("%u", &Radix);
 
-        bn *BN = bn_new();
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix(BN, String, Radix);
+    bn *BN = bn_new();
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix(BN, String, Radix);
 
-        printf("\n");
-        bn_print_hex(BN);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN);
-    }
+    bn_delete(BN);
 
-    return(0);
+    return 0;
 }
 
 // Вывод числа в системе счисления radix.
-int radix_out_test()
+int radix_out()
 {
-    while (1)
-    {
-        printf("Radix test.\n\n");
-        char String[1024];
+    printf("Radix test.\n\n");
+    char String[1024];
 
-        unsigned int Radix = 2;
-        printf("Radix: ");
-        scanf("%u", &Radix);
+    unsigned int Radix = 2;
+    printf("Radix: ");
+    scanf("%u", &Radix);
 
-        bn *BN = bn_new();
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN, String);
+    bn *BN = bn_new();
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN, String);
 
-        const char *str = bn_to_string(BN, Radix);
+    const char *str = bn_to_string(BN, Radix);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
-        bn_delete(BN);
+    free((char*)str);
+    bn_delete(BN);
 
-        //_CrtDumpMemoryLeaks();
+    //_CrtDumpMemoryLeaks();
 
-        return(0);
-    }
-
-    return(0);
+    return 0;
 }
 
 // Сложение большого числа и int.
-int add_to_int_test()
+int add_to_int()
 {
-    while (1)
-    {
-        printf("Addition to int test.\n\n");
-        char String[1024];
+    printf("Addition to int test.\n\n");
+    char String[1024];
 
-        bn *BN = bn_new();
-        int Integer = 0;
+    bn *BN = bn_new();
+    int Integer = 0;
 
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix(BN, String, 10);
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix(BN, String, 10);
 
-        printf("\n");
+    printf("\n");
 
-        printf("Integer: ");
-        scanf("%d", &Integer);
+    printf("Integer: ");
+    scanf("%d", &Integer);
 
-        // СЛОЖЕНИЕ.
-        bn_add_to_int(BN, Integer);
+    // СЛОЖЕНИЕ.
+    bn_add_to_int(BN, Integer);
 
-        const char *str = bn_to_string(BN, 10);
+    const char *str = bn_to_string(BN, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
+    free((char*)str);
 
-        bn_delete(BN);
-    }
+    bn_delete(BN);
 
-    return(0);
+    return 0;
 }
 
 // Cложение двух вводимых чисел.
-int addition_test()
+int addition()
 {
-    while (1)
-    {
-        printf("Addition test.\n\n");
-        char String[1024];
+    printf("Addition test.\n\n");
+    char String[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number (hex, 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix_pow2(BN1, String, 16);
+    printf("First big number (hex, 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix_pow2(BN1, String, 16);
 
-        printf("BN1: \n");
-        bn_print_hex(BN1);
+    printf("BN1: \n");
+    bn_print_hex(BN1);
 
 
-        printf("\n");
+    printf("\n");
 
 
-        bn *BN2 = bn_new();
+    bn *BN2 = bn_new();
 
-        printf("Second big number (hex, 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix_pow2(BN2, String, 16);
+    printf("Second big number (hex, 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix_pow2(BN2, String, 16);
 
-        printf("BN2: \n");
-        bn_print_hex(BN2);
+    printf("BN2: \n");
+    bn_print_hex(BN2);
 
-        // СЛОЖЕНИЕ.
-        bn_add_to(BN1, BN2);
+    // СЛОЖЕНИЕ.
+    bn_add_to(BN1, BN2);
 
-        printf("\n");
-        bn_print_hex(BN1);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN1);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN1);
-        bn_delete(BN2);
-    }
+    bn_delete(BN1);
+    bn_delete(BN2);
 
-    return(0);
+    return 0;
 }
 
 // Вычитание двух вводимых чисел.
-int substitution_test()
+int substitution()
 {
-    while (1)
-    {
-        printf("Substitution test.\n\n");
-        char String[1024];
+    printf("Substitution test.\n\n");
+    char String[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN1, String);
+    printf("First big number 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN1, String);
 
-        printf("BN1: \n");
-        bn_print_hex(BN1);
+    printf("BN1: \n");
+    bn_print_hex(BN1);
 
 
-        printf("\n");
+    printf("\n");
 
 
-        bn *BN2 = bn_new();
+    bn *BN2 = bn_new();
 
-        printf("Second big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN2, String);
+    printf("Second big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN2, String);
 
-        printf("BN2: \n");
-        bn_print_hex(BN2);
+    printf("BN2: \n");
+    bn_print_hex(BN2);
 
-        // ВЫЧИТАНИЕ.
-        bn_sub_to(BN1, BN2);
+    // ВЫЧИТАНИЕ.
+    bn_sub_to(BN1, BN2);
 
-        const char *str = bn_to_string(BN1, 10);
+    const char *str = bn_to_string(BN1, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
+    free((char*)str);
 
-        bn_delete(BN1);
-        bn_delete(BN2);
-    }
+    bn_delete(BN1);
+    bn_delete(BN2);
 
-    return(0);
+    return 0;
 }
 
 // Нахождение N-ого элемента последовательности Фибоначчи.
-int fibonacci_test()
+int fibonacci()
 {
     printf("Fibonacci test.\n\n");
     printf("Number of element (the first one is 1): ");
@@ -236,13 +235,13 @@ int fibonacci_test()
         bn_delete(TEMP);
     }
 
-    return(0);
+    return 0;
 }
 
 // Нахождение номера последней пары соседних элементов модифицированной последовательности Фибоначчи, имеющих разный знак.
 // Гипотеза: для двух стартовых элементов, отношение которых близко к золотому сечению, искомый номер растёт линейно с ростом
 // длины (логарифма в случае целого) числа.
-int custom_fibonacci_sign_test()
+int custom_fibonacci_sign()
 {
     printf("Custom fibonacci test.\n\n");
 
@@ -304,216 +303,201 @@ int custom_fibonacci_sign_test()
     free(String1);
     free(String2);
 
-    return(0);
+    return 0;
 }
 
 // Умножение большого числа на int.
-int mul_to_int_test()
+int mul_to_int()
 {
-    while (1)
-    {
-        printf("Multiplication to int test.\n\n");
-        char String[1024];
+    printf("Multiplication to int test.\n\n");
+    char String[1024];
 
-        bn *BN = bn_new();
-        int Integer = 0;
+    bn *BN = bn_new();
+    int Integer = 0;
 
-        printf("Big number (hex, 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix_pow2(BN, String, 16);
+    printf("Big number (hex, 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix_pow2(BN, String, 16);
 
-        printf("BN: \n");
-        bn_print_formula(BN);
+    printf("BN: \n");
+    bn_print_formula(BN);
 
 
-        printf("\n");
+    printf("\n");
 
 
-        printf("Integer: ");
-        scanf("%d", &Integer);
+    printf("Integer: ");
+    scanf("%d", &Integer);
 
-        // УМНОЖЕНИЕ.
-        bn_mul_to_int(BN, Integer);
+    // УМНОЖЕНИЕ.
+    bn_mul_to_int(BN, Integer);
 
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN);
-    }
+    bn_delete(BN);
 
-    return(0);
+    return 0;
 }
 
 // Деление (с остатком) большого числа на unsigned int.
-int div_mod_to_uint_test()
+int div_mod_to_uint()
 {
-    while (1)
-    {
-        printf("Division to unsigned int test.\n\n");
-        char String[1024];
+    printf("Division to unsigned int test.\n\n");
+    char String[1024];
 
-        bn *BN = bn_new();
-        int Integer = 0;
+    bn *BN = bn_new();
+    int Integer = 0;
 
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN, String);
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN, String);
 
-        printf("BN: \n");
-        bn_print_formula(BN);
+    printf("BN: \n");
+    bn_print_formula(BN);
 
-        printf("\n");
+    printf("\n");
 
-        printf("Integer: ");
-        scanf("%u", &Integer);
+    printf("Integer: ");
+    scanf("%d", &Integer);
 
-        // ДЕЛЕНИЕ.
-        bn_div_mod_to_uint(BN, Integer, 0);
+    // ДЕЛЕНИЕ.
+    bn_div_mod_to_uint(BN, Integer, 0);
 
-        printf("\n");
-        bn_print_hex(BN);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_init_string(BN, String);
+    bn_init_string(BN, String);
 
-        // ОСТАТОК.
-        bn_div_mod_to_uint(BN, Integer, 1);
+    // ОСТАТОК.
+    bn_div_mod_to_uint(BN, Integer, 1);
 
-        printf("\n");
-        bn_print_hex(BN);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN);
-    }
+    bn_delete(BN);
 
-    return(0);
+    return 0;
 }
 
 // Умножение больших чисел.
-int multiplication_test()
+int multiplication()
 {
-    while (1)
-    {
-        printf("Multiplication test.\n\n");
-        char String[1024];
+    printf("Multiplication test.\n\n");
+    char String[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number (hex, 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix_pow2(BN1, String, 16);
+    printf("First big number (hex, 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix_pow2(BN1, String, 16);
 
-        printf("BN1: \n");
-        bn_print_hex(BN1);
+    printf("BN1: \n");
+    bn_print_hex(BN1);
 
 
-        printf("\n");
+    printf("\n");
 
 
-        bn *BN2 = bn_new();
+    bn *BN2 = bn_new();
 
-        printf("Second big number (hex, 1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix_pow2(BN2, String, 16);
+    printf("Second big number (hex, 1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix_pow2(BN2, String, 16);
 
-        printf("BN2: \n");
-        bn_print_hex(BN2);
+    printf("BN2: \n");
+    bn_print_hex(BN2);
 
-        // УМНОЖЕНИЕ.
-        bn_mul_to(BN1, BN2);
+    // УМНОЖЕНИЕ.
+    bn_mul_to(BN1, BN2);
 
-        printf("\n");
-        bn_print_hex(BN1);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN1);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN1);
-        bn_delete(BN2);
-    }
+    bn_delete(BN1);
+    bn_delete(BN2);
 
-    return(0);
+    return 0;
 }
 
 // Возведение в степень.
-int power_test()
+int power()
 {
-    while (1)
-    {
-        printf("Power to test.\n\n");
-        char String[1024];
+    printf("Power to test.\n\n");
+    char String[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN1, String);
+    printf("First big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN1, String);
 
-        printf("\n");
+    printf("\n");
 
-        int power = 1;
-        printf("Power: ");
-        scanf("%d", &power);
+    int power = 1;
+    printf("Power: ");
+    scanf("%d", &power);
 
-        // ВОЗВЕДЕНИЕ В СТЕПЕНЬ.
-        bn_pow_to(BN1, power);
+    // ВОЗВЕДЕНИЕ В СТЕПЕНЬ.
+    bn_pow_to(BN1, power);
 
-        const char *str = bn_to_string(BN1, 10);
+    const char *str = bn_to_string(BN1, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
-        bn_delete(BN1);
-    }
+    free((char*)str);
+    bn_delete(BN1);
 
-    return(0);
+    return 0;
 }
 
 // Нахождение корня.
-int root_test()
+int root()
 {
-    while (1)
-    {
-        printf("Root to test.\n\n");
-        char String[1024];
+    printf("Root to test.\n\n");
+    char String[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string(BN1, String);
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string(BN1, String);
 
-        printf("\n");
+    printf("\n");
 
-        int reciprocal = 1;
-        printf("Reciprocal: ");
-        scanf("%d", &reciprocal);
+    int reciprocal = 1;
+    printf("Reciprocal: ");
+    scanf("%d", &reciprocal);
 
-        // НАХОЖДЕНИЯ КОРНЯ.
-        bn_root_to(BN1, reciprocal);
+    // НАХОЖДЕНИЯ КОРНЯ.
+    bn_root_to(BN1, reciprocal);
 
-        const char *str = bn_to_string(BN1, 10);
+    const char *str = bn_to_string(BN1, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
-        bn_delete(BN1);
-    }
+    free((char*)str);
+    bn_delete(BN1);
 
-    return(0);
+    return 0;
 }
 
 // Нахождение факториала N.
-int factorial_test()
+int factorial()
 {
     printf("Factorial test.\n\n");
     printf("Enter N: ");
@@ -545,158 +529,149 @@ int factorial_test()
 }
 
 // Деление больших чисел.
-int division_test()
+int division()
 {
-    while (1)
-    {
-        printf("Division test.\n\n");
-        char String1[1024];
-        char String2[1024];
+    printf("Division test.\n\n");
+    char String1[1024];
+    char String2[1024];
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number (1024 symbols max): ");
-        scanf("%s", String1);
-        bn_init_string(BN1, String1);
+    printf("First big number (1023 symbols max): ");
+    scanf("%s", String1);
+    bn_init_string(BN1, String1);
 
-        printf("\n");
+    printf("\n");
 
-        bn *BN2 = bn_new();
+    bn *BN2 = bn_new();
 
-        printf("Second big number (1024 symbols max): ");
-        scanf("%s", String2);
-        bn_init_string(BN2, String2);
+    printf("Second big number (1023 symbols max): ");
+    scanf("%s", String2);
+    bn_init_string(BN2, String2);
 
-        // ДЕЛЕНИЕ.
-        bn_div_to(BN1, BN2);
+    // ДЕЛЕНИЕ.
+    bn_div_to(BN1, BN2);
 
-        const char *str = bn_to_string(BN1, 10);
+    const char *str = bn_to_string(BN1, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        bn_init_string(BN1, String1);
+    bn_init_string(BN1, String1);
 
-        // ДЕЛЕНИЕ С ОСТАТКОМ.
-        bn_mod_to(BN1, BN2);
+    // ДЕЛЕНИЕ С ОСТАТКОМ.
+    bn_mod_to(BN1, BN2);
 
-        str = bn_to_string(BN1, 10);
+    str = bn_to_string(BN1, 10);
 
-        printf("\n");
-        printf("%s", str);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    printf("%s", str);
+    printf("\n");
+    printf("\n");
 
-        free((char*)str);
+    free((char*)str);
 
-        bn_delete(BN1);
-        bn_delete(BN2);
-    }
+    bn_delete(BN1);
+    bn_delete(BN2);
 
-    return(0);
+    return 0;
 }
 
 // Деление с остатком больших чисел.
-int mod_test()
+int mod()
 {
-    while (1)
-    {
-        printf("Mod test.\n\n");
-        char String[1024];
+    printf("Mod test.\n\n");
+    char String[1024];
 
-        unsigned int Radix = 2;
-        printf("Radix: ");
-        scanf("%u", &Radix);
+    unsigned int Radix = 2;
+    printf("Radix: ");
+    scanf("%u", &Radix);
 
-        bn *BN1 = bn_new();
+    bn *BN1 = bn_new();
 
-        printf("First big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix(BN1, String, Radix);
+    printf("First big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix(BN1, String, Radix);
 
-        printf("BN1: \n");
-        bn_print_formula(BN1);
+    printf("BN1: \n");
+    bn_print_formula(BN1);
 
 
-        printf("\n");
+    printf("\n");
 
 
-        bn *BN2 = bn_new();
+    bn *BN2 = bn_new();
 
-        printf("Second big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix(BN2, String, Radix);
+    printf("Second big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix(BN2, String, Radix);
 
-        printf("BN2: \n");
-        bn_print_formula(BN2);
+    printf("BN2: \n");
+    bn_print_formula(BN2);
 
-        // Деление с остатком.
-        bn_mod_to(BN1, BN2);
+    // Деление с остатком.
+    bn_mod_to(BN1, BN2);
 
-        printf("\n");
-        bn_print_hex(BN1);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_hex(BN1);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN1);
-        bn_delete(BN2);
-    }
+    bn_delete(BN1);
+    bn_delete(BN2);
 
-    return(0);
+    return 0;
 }
 
 // Проверка функции сдвига числа.
-int shift_test()
+int shift()
 {
-    while (1)
-    {
-        printf("Shift test.\n\n");
-        char String[1024];
+    printf("Shift test.\n\n");
+    char String[1024];
 
-        unsigned int Radix = 2;
-        printf("Radix: ");
-        scanf("%u", &Radix);
+    unsigned int Radix = 2;
+    printf("Radix: ");
+    scanf("%u", &Radix);
 
-        bn *BN = bn_new();
-        printf("Big number (1024 symbols max): ");
-        scanf("%s", String);
-        bn_init_string_radix(BN, String, Radix);
+    bn *BN = bn_new();
+    printf("Big number (1023 symbols max): ");
+    scanf("%s", String);
+    bn_init_string_radix(BN, String, Radix);
 
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_shift(BN, 1);
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    bn_shift(BN, 1);
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_shift(BN, 2);
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    bn_shift(BN, 2);
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_shift(BN, -1);
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    bn_shift(BN, -1);
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_shift(BN, -3);
-        printf("\n");
-        bn_print_formula(BN);
-        printf("\n");
-        printf("\n");
+    bn_shift(BN, -3);
+    printf("\n");
+    bn_print_formula(BN);
+    printf("\n");
+    printf("\n");
 
-        bn_delete(BN);
-    }
+    bn_delete(BN);
 
-    return(0);
+    return 0;
 }
 
 
@@ -706,22 +681,65 @@ int main()
 {
     //_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-    //radix_test();
-    //radix_out_test();
+    #ifdef TEST_RADIX
+    radix();
+    #endif
 
-    //add_to_int_test();
-    //addition_test();
-    //substitution_test();
-    //fibonacci_test();
-    //custom_fibonacci_sign_test();
+    #ifdef TEST_RADIX_OUT
+    radix_out();
+    #endif
 
-    //multiplication_test();
-    //power_test();
-    //root_test();
-    //factorial_test();
-    //div_mod_to_uint_test();
-    division_test();
-    //mod_test();
+    #ifdef TEST_ADD_TO_INT
+    add_to_int();
+    #endif
 
-    return(0);
+    #ifdef TEST_ADDITION
+    addition();
+    #endif
+
+    #ifdef TEST_SUBSTITUTION
+    substitution();
+    #endif
+
+    #ifdef TEST_FIBONACCI
+    fibonacci();
+    #endif
+
+    #ifdef TEST_CUSTOM_FIBONACCI_SIGN
+    custom_fibonacci_sign();
+    #endif
+
+    #ifdef TEST_MULTIPLICATION
+    multiplication();
+    #endif
+
+    #ifdef TEST_POWER
+    power();
+    #endif
+
+    #ifdef TEST_ROOT
+    root();
+    #endif
+
+    #ifdef TEST_FACTORIAL
+    factorial();
+    #endif
+
+    #ifdef TEST_DIV_MOD_TO_UINT
+    div_mod_to_uint();
+    #endif
+
+    #ifdef TEST_DIVISION
+    division();
+    #endif
+
+    #ifdef TEST_MOD
+    mod();
+    #endif
+
+    #ifdef TEST_SHIFT
+    shift();
+    #endif
+
+    return 0;
 }
